@@ -82,7 +82,7 @@ export default function LiveHeader({
   bench: { loss: number; step: number } | null;
 }) {
   const feed = useLiveFeed();
-  const { live, meta, state, age, source } = feed;
+  const { live, meta, state, age, source, paused, setPaused } = feed;
 
   const latest = useMemo(() => {
     const m = new Map<SampleKey, Change>();
@@ -181,6 +181,20 @@ export default function LiveHeader({
         <Link href="/live" className="text-accent/90 underline-offset-2 hover:underline">
           direct →
         </Link>
+      </span>
+
+      {/* ── pause du direct (l'étude Bencho, au travail) ──────────
+         L'interrupteur liquide est ici une vraie commande : il
+         arrête le polling du feed ET le rafraîchissement
+         automatique du contenu. Éteint = la page ne parle plus
+         au réseau et garde ce qu'elle montre ; allumé = le
+         direct repart, rattrape la dernière mesure, et le
+         rafraîchissement automatique reprend là où il était. */}
+      <span
+        className="flex shrink-0 items-center pl-2"
+        title={paused ? "Le direct est en pause — cliquez pour le reprendre" : "Mettre le direct en pause (arrête le polling)"}
+      >
+        <LiquidToggle on={!paused} onToggle={(v) => setPaused(!v)} label="Le direct : actif ou en pause" />
       </span>
     </div>
   );

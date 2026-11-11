@@ -87,11 +87,32 @@ export function LiquidToggle({
   stretch = 36,
   /* how fast it crosses, 0..100 */
   speed = 50,
+  /* ── adaptation dashboard : le contrôle vient du dehors ──
+     La référence était toujours auto-gérée (`useState`).
+     Ici l'interrupteur pilote une vraie fonction — la pause
+     du direct — dont l'état vit dans le LiveProvider ; il est
+     donc contrôlable : passez `on` et `onToggle`, laissez-les
+     tomber pour le comportement d'origine. */
+  on: controlled,
+  onToggle,
+  /* what the switch is called by screen readers — the name of the
+     thing it drives, not of the study it comes from */
+  label = "Interrupteur liquide",
 }: {
   stretch?: number;
   speed?: number;
+  on?: boolean;
+  onToggle?: (next: boolean) => void;
+  label?: string;
 } = {}) {
-  const [on, setOn] = useState(false);
+  const [inner, setInner] = useState(false);
+  const on = controlled ?? inner;
+  /* the one way any caller sees a change: uncontrolled keeps the
+     internal state, controlled reports to `onToggle` and trusts it */
+  const flip = (v: boolean) => {
+    if (controlled === undefined) setInner(v);
+    onToggle?.(v);
+  };
   /* held, so the settling spring knows to keep out of the way
      while a finger owns the thumb */
   const [held, setHeld] = useState(false);
@@ -293,7 +314,7 @@ export function LiquidToggle({
     /* it flips as it passes the middle rather than on release,
        so the track answers under your finger */
     const past = next > MID_X;
-    if (past !== on) { setOn(past); }
+    if (past !== on) { flip(past); }
   };
 
   const up = (e: React.PointerEvent) => {
@@ -314,7 +335,7 @@ export function LiquidToggle({
     try { rail.current?.releasePointerCapture?.(e.pointerId); } catch { /* never captured */ }
     /* A press that never travelled is a CLICK, and a click
        toggles — the switch has to keep working as a switch. */
-    if (!g.moved) { setOn((v) => { return !v; }); }
+    if (!g.moved) { flip(!on); }
     setHeld(false);
   };
 
@@ -326,7 +347,7 @@ export function LiquidToggle({
         data-on={on}
         role="switch"
         aria-checked={on}
-        aria-label="Interrupteur liquide"
+        aria-label={label}
         onPointerDown={down}
         onPointerMove={move}
         onPointerUp={up}
@@ -337,7 +358,7 @@ export function LiquidToggle({
         onKeyDown={(e) => {
           if (e.key !== " " && e.key !== "Enter") return;
           e.preventDefault();
-          setOn((v) => { return !v; });
+          flip(!on);
         }}
       >
         <span className="liq-sw-blobs" aria-hidden="true">

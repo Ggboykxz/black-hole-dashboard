@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { Inter } from "next/font/google";
+/* BoardUI d'abord : ses resets et ses tokens chargent avant le système
+   de design du projet, dont les règles gagnent partout où les deux
+   parlent du même élément (body, html). Les tokens sémantiques de
+   BoardUI restent disponibles pour ses composants (tooltip, palette,
+   skeleton) via la classe `dark` posée sur <html>. */
+import "@/styles/globals.css";
 import "./globals.css";
 import Nav from "@/components/nav";
 import AutoRefresh from "@/components/auto-refresh";
@@ -9,7 +16,17 @@ import Copilot from "@/components/copilot";
 import LiveHeader, { RailStatus } from "@/components/live-header";
 import { LiveProvider } from "@/components/live-provider";
 import SignalRibbon from "@/components/signal-ribbon";
+import Palette from "@/components/palette";
+import { MagnifyingDock } from "@/components/magnifying-dock";
+import { ToastStack } from "@/components/toast-stack";
+import { EyeTracker } from "@/components/eye-tracker";
+import { DraggingBall } from "@/components/dragging-ball";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 import { getSnapshot } from "@/lib/snapshot";
+
+/* la fonte de BoardUI (typography.css lit --font-inter) — le reste du
+   site garde sa pile système, rien n'est changé pour lui */
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Black Hole — suivi live de l'entraînement",
@@ -48,7 +65,7 @@ export default async function RootLayout({
   const lastBench = snapshot.benchmarks[snapshot.benchmarks.length - 1];
 
   return (
-    <html lang="fr">
+    <html lang="fr" className={`dark ${inter.variable}`}>
       <body>
         <LiveProvider
           initialRows={snapshot.series.train.map((p) => ({ step: p.step, loss: p.loss }))}
@@ -57,6 +74,7 @@ export default async function RootLayout({
         <AutoRefresh />
         <SignalRibbon />
         <Copilot snapshot={snapshot} />
+        <Palette />
         <div className="flex min-h-screen">
           {/* the rail */}
           <aside className="sticky top-0 hidden h-screen w-[228px] shrink-0 flex-col border-r border-line bg-[#080a0e]/80 px-4 py-5 backdrop-blur md:flex">
@@ -97,7 +115,19 @@ export default async function RootLayout({
                   }
                 />
               </div>
-              <div className="shrink-0 pr-4 md:pr-7">
+              <div className="flex shrink-0 items-center gap-3 pr-4 md:pr-7">
+                {/* la prise visible de la palette — ⌘K marche partout,
+                   le bouton dit aux autres qu'elle existe */}
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent("bh:palette"))}
+                  className="hidden items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-[11px] text-faint transition-colors hover:border-accent/40 hover:text-ink sm:flex"
+                  aria-label="Ouvrir la palette de commandes (Ctrl+K)"
+                >
+                  Rechercher…
+                  <kbd className="rounded border border-line bg-panel2 px-1 py-px font-mono text-[9.5px] text-faint">
+                    ⌘K
+                  </kbd>
+                </button>
                 <Notifications snapshot={snapshot} />
               </div>
             </header>
@@ -109,7 +139,7 @@ export default async function RootLayout({
               {children}
             </main>
 
-            <footer className="px-4 pb-8 pt-4 text-[10.5px] text-faint md:px-7">
+            <footer className="px-4 pb-24 pt-4 text-[10.5px] text-faint md:px-7 md:pb-8">
               <p>
                 Black Hole — le dashboard lit les mêmes artefacts que la
                 documentation ({" "}
@@ -121,8 +151,42 @@ export default async function RootLayout({
                   journal
                 </Link>
               </p>
+
+              {/* ── l'atelier du pied de page ───────────────────────
+                 Les trois études Bencho qui n'ont pas de fonction à
+                 tenir (la nav est le dock, la pause est le toggle du
+                 header) vivent ici, sur TOUTES les pages : le
+                 gardien veille sans jamais vous regarder faire,
+                 la balle se traîne, le portefeuille cède et
+                 rebondit. C'est la signature du site, pas une
+                 vitrine séparée quelque part. */}
+              <div className="mt-4 flex flex-wrap items-end justify-end gap-x-6 gap-y-2 border-t border-line pt-4">
+                <EyeTracker idle size={64} />
+                <DraggingBall size={48} />
+                <PullToRefresh />
+              </div>
             </footer>
           </div>
+        </div>
+
+        {/* ── le dock : la nav du mobile ────────────────────────
+           Le rail est `hidden md:flex`, donc un téléphone n'a
+           AUCUNE navigation. Le dock Bencho (cinq pages, magnétées)
+           est fixé en bas sur mobile seulement — le rail reste
+           seul maître sur desktop, deux navs actives se
+           disputeraient le regard. Le footer porte `pb-24` pour
+           que rien ne se cache sous lui. */}
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-3 md:hidden">
+          <div className="pointer-events-auto">
+            <MagnifyingDock />
+          </div>
+        </div>
+
+        {/* la pile de notifications du run, flottante en bas à
+           droite — elle se déplie au survol, au-dessus du contenu,
+           jamais dans le flux d'une page */}
+        <div className="fixed bottom-5 right-5 z-30 hidden lg:block">
+          <ToastStack />
         </div>
         </LiveProvider>
       </body>

@@ -118,6 +118,9 @@ export interface LiveFeed {
   changeCount: number;
   /** forget the local journal */
   reset: () => void;
+  /** polling paused — the toggle in the header; nothing is fetched while true */
+  paused: boolean;
+  setPaused: (v: boolean) => void;
 }
 
 const LiveContext = createContext<LiveFeed | null>(null);
@@ -153,6 +156,11 @@ export function LiveProvider({
   const [restored, setRestored] = useState(false);
   const [cachePoints, setCachePoints] = useState(0);
   const [changeCount, setChangeCount] = useState(0);
+  /* pause du direct : le toggle du header l'écrit, la boucle le lit par
+     le ref — un setInterval n'est pas recréé, il ne fait plus rien */
+  const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(false);
+  pausedRef.current = paused;
 
   const liveRef = useRef<Live | null>(null);
   const rowsRef = useRef<LiveRow[]>(initialRows);
@@ -186,6 +194,9 @@ export function LiveProvider({
     let alive = true;
 
     const poll = async () => {
+      /* en pause : rien ne part, rien n'est stocké — la page reste
+         figée sur ce qu'elle montre, et le réseau respire */
+      if (pausedRef.current) return;
       try {
         const res = await fetch("/api/live", { cache: "no-store" });
         if (!res.ok) {
@@ -355,6 +366,8 @@ export function LiveProvider({
       lastChangeAt: changes.length ? changes[0].t : null,
       changeCount,
       reset,
+      paused,
+      setPaused,
     }),
     [
       live,
@@ -373,6 +386,7 @@ export function LiveProvider({
       changes,
       changeCount,
       reset,
+      paused,
     ],
   );
 

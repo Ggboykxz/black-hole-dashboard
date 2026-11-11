@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { useLiveFeed } from "./live-provider";
 
 /**
  * Automatic refresh.
@@ -14,12 +15,18 @@ import { useEffect, useRef } from "react";
  * The threshold (50 steps ≈ 2 min) avoids re-rendering on every log line:
  * the *live* panel handles the second-by-second part, this handles the
  * content.
+ *
+ * It pauses with the live feed: the toggle in the header stops both pollers,
+ * so "en pause" means the page truly stops talking to the network — not just
+ * the numbers freezing while two timers keep firing.
  */
 export default function AutoRefresh({ threshold = 50 }: { threshold?: number }) {
   const router = useRouter();
+  const { paused } = useLiveFeed();
   const last = useRef<number | null>(null);
 
   useEffect(() => {
+    if (paused) return;
     let alive = true;
     const tick = async () => {
       try {
@@ -46,7 +53,7 @@ export default function AutoRefresh({ threshold = 50 }: { threshold?: number }) 
       alive = false;
       window.clearInterval(t);
     };
-  }, [router, threshold]);
+  }, [router, threshold, paused]);
 
   return null;
 }
