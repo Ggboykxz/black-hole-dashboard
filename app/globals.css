@@ -1,0 +1,381 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ theme */
+:root {
+  --bg: #07080b;
+  --bg-soft: #0b0d12;
+  --panel: #0f1218;
+  --panel-2: #141822;
+  --line: #1e2430;
+  --line-soft: #171c26;
+  --ink: #e6eaf2;
+  --ink-dim: #98a2b6;
+  --ink-faint: #64708a;
+  --accent: #38bdf8;
+  --accent-2: #a78bfa;
+  --good: #34d399;
+  --warn: #fbbf24;
+  --bad: #fb7185;
+  --hot: #f97316;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel2: var(--panel-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-dim: var(--ink-dim);
+  --color-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent2: var(--accent-2);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-hot: var(--hot);
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo,
+    Consolas, monospace;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-image:
+    radial-gradient(1100px 520px at 12% -8%, rgba(56, 189, 248, 0.07), transparent 60%),
+    radial-gradient(900px 480px at 88% -4%, rgba(167, 139, 250, 0.07), transparent 62%);
+  background-attachment: fixed;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+/* ------------------------------------------------------------ micro-interactions */
+/* ------------------------------------------------------------ liquid glass */
+.card {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0) 42%),
+    linear-gradient(160deg, rgba(56, 189, 248, 0.05), rgba(167, 139, 250, 0.03) 55%, transparent 80%),
+    rgba(15, 18, 24, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 18px;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    0 18px 40px -30px rgba(0, 0, 0, 0.9);
+  transition: border-color 200ms ease, transform 220ms cubic-bezier(.22,.61,.36,1),
+    box-shadow 220ms ease, background 220ms ease;
+}
+
+/* the light that slides across the top of the glass */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.055) 42%,
+    transparent 62%
+  );
+  background-size: 220% 100%;
+  opacity: 0;
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+
+.card:hover {
+  border-color: rgba(125, 211, 252, 0.22);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    0 26px 50px -32px rgba(56, 189, 248, 0.45);
+}
+
+.card:hover::before {
+  opacity: 1;
+  background-position: 100% 0;
+  transition: opacity 260ms ease, background-position 900ms ease;
+}
+
+/* the soft sheen of a glass edge */
+.card-head {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.022), transparent);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 17px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--ink-dim);
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(10px);
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease,
+    transform 160ms ease;
+}
+
+.chip:hover {
+  border-color: rgba(125, 211, 252, 0.35);
+  color: var(--ink);
+  background: rgba(56, 189, 248, 0.08);
+  transform: translateY(-1px);
+}
+
+/* the glass used by the tables' header and the floating panels */
+.glass {
+  background: rgba(15, 18, 24, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* The live indicator. Its colour is *bound to the state of the signal*
+   (live = green, stale = amber, frozen/none = red) and is injected inline
+   with `--pulse-color`, so the dot, its halo and the label can never
+   disagree about whether the data is fresh. */
+.pulse {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--pulse-color, var(--good));
+}
+
+.pulse::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  border: 1px solid var(--pulse-color, var(--good));
+  opacity: 0.6;
+  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* a state that is not "live" must not ping: a frozen snapshot has no beat */
+.pulse-static::after {
+  animation: none;
+  opacity: 0.28;
+}
+
+/* the "seen" tick of a number that just changed */
+@keyframes flashValue {
+  0% {
+    background-color: rgba(56, 189, 248, 0.28);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* the copilot's ring when it is pointing at something */
+@keyframes ringSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* a soft "breathing" halo for the minibots that are working */
+@keyframes haloPulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.04);
+  }
+}
+
+/* the halo of the last measured point: the curve stops where the data
+   stops, and the eye must be able to see where that is */
+@keyframes chartPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.24;
+  }
+  70% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.chart-last {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chartPulse 2.6s ease-out infinite;
+}
+
+@keyframes ping {
+  75%,
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.045);
+    opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #10141c 25%, #171d28 37%, #10141c 63%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1b212c;
+  border-radius: 8px;
+  border: 2px solid var(--bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #273040;
+}
+
+table.dt {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+table.dt th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: 10px;
+  padding: 8px 11px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  position: sticky;
+  top: 0;
+  background: rgba(13, 16, 22, 0.86);
+  backdrop-filter: blur(12px);
+  z-index: 1;
+}
+
+table.dt td {
+  padding: 8px 11px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+  vertical-align: top;
+}
+
+table.dt tbody tr {
+  transition: background 120ms ease;
+}
+
+table.dt tbody tr:hover {
+  background: rgba(56, 189, 248, 0.06);
+}
+
+/* ------------------------------------------------------------ accessibility */
+/* The keyboard must be visible: a mouse is not the only way to drive a
+   dashboard, and a focus ring that nobody can see is a focus ring that
+   does not exist. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.28);
+  color: #fff;
+}
+
+/* Motion is decoration here: every number stays readable without it. When the
+   OS asks for less motion, the dashboard stops moving — the data, the states
+   and the freshness bars do not depend on an animation to be understood. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
