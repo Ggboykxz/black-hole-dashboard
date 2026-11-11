@@ -31,6 +31,7 @@ export type SignalState =
   | "live"
   | "stale"
   | "offline"
+  | "cached"
   | "frozen"
   | "none";
 
@@ -48,9 +49,17 @@ export interface SignalInput {
 
 export function signalState(i: SignalInput): SignalState {
   if (i.source === "snapshot") return "frozen";
-  if (i.source === "cache") return "offline";
-  if (i.source === "none") return i.attempted ? "none" : "connecting";
+  /* the failure comes first: it is the stronger fact. A journal
+     restored from the local cache that is then refused by the
+     network is "offline", not "restored". */
   if (i.fetchFailed) return i.hasData ? "offline" : "none";
+  /* a restored journal is not a reading of the moment. It used to
+     fall through to the age test and to be painted "SIGNAL
+     VIEILLI" — with the payload's own `source: "local"` inside it,
+     which made a healthy run look dead for the few seconds before
+     the first poll answered. Its age is the age of the *copy*. */
+  if (i.source === "cache") return "cached";
+  if (i.source === "none") return i.attempted ? "none" : "connecting";
   if (i.ageS !== null && i.ageS > STALE_AFTER_S) return "stale";
   return "live";
 }
@@ -87,6 +96,12 @@ export const SIGNAL_META: Record<SignalState, SignalMeta> = {
   offline: {
     label: "HORS LIGNE",
     hint: "la requête a échoué : le journal local affiche le dernier état connu, avec son âge",
+    color: "#fbbf24",
+    warn: true,
+  },
+  cached: {
+    label: "JOURNAL LOCAL",
+    hint: "le premier poll n'a pas encore répondu : ce qui s'affiche vient du journal local (avec son âge), pas d'une lecture du moment",
     color: "#fbbf24",
     warn: true,
   },

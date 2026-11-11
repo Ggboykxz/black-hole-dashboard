@@ -96,6 +96,9 @@ export interface LiveFeed {
   error: string | null;
   /** has a poll ever completed (success or failure)? */
   attempted: boolean;
+  /** has a poll ever SUCCEEDED in this session? Until then, what the
+   *  views show comes from the restored journal, not from a reading */
+  verified: boolean;
   /** no payload has been received yet: the views must say "unknown", not "dead" */
   unknown: boolean;
   /** was the journal restored from localStorage? */
@@ -154,6 +157,12 @@ export function LiveProvider({
   const [error, setError] = useState<string | null>(null);
   const [attempted, setAttempted] = useState(false);
   const [restored, setRestored] = useState(false);
+  /* a poll that ANSWERED. The restored journal is a copy of a
+     previous reading: it carries its own `source: "local"` inside,
+     and its age is the age of the copy. Without this flag the panel
+     read that copy as a live measurement and cried "the trainer is
+     probably dead" for the few seconds before the first poll. */
+  const [verified, setVerified] = useState(false);
   const [cachePoints, setCachePoints] = useState(0);
   const [changeCount, setChangeCount] = useState(0);
   /* pause du direct : le toggle du header l'écrit, la boucle le lit par
@@ -214,6 +223,7 @@ export function LiveProvider({
 
         liveRef.current = data;
         setLive(data);
+        setVerified(true);
         setError(null);
 
         const hist = (data.gpu_history ?? []) as {
@@ -318,12 +328,22 @@ export function LiveProvider({
   }, []);
 
   const source: SignalSource = useMemo(() => {
+    /* tant qu'aucun poll n'a répondu, ce que l'on affiche vient du
+       journal restauré (ou de rien) : le dire "cache", jamais
+       "local" — sinon l'âge de la copie déclenche l'alerte "signal
+       périmé" alors que le serveur n'a simplement pas encore
+       répondu. Un payload restauré garde `source: "local"` à
+       l'intérieur : c'est ce piège-là qu'il faut écarter. */
+    if (!verified) {
+      if (restored) return "cache";
+      if (live?.source === "snapshot") return "snapshot";
+      return "none";
+    }
     if (live?.source === "snapshot") return "snapshot";
     if (live?.source === "local") return "local";
     if (live?.source === "hub") return "hub";
-    if (restored) return "cache";
     return "none";
-  }, [live, restored]);
+  }, [live, restored, verified]);
 
   const state = useMemo(
     () =>
@@ -355,6 +375,7 @@ export function LiveProvider({
       fresh: freshness(age),
       error,
       attempted,
+      verified,
       unknown,
       restored,
       cachePoints,
@@ -376,6 +397,7 @@ export function LiveProvider({
       age,
       error,
       attempted,
+      verified,
       unknown,
       restored,
       cachePoints,
