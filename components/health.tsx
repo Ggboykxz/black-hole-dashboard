@@ -126,6 +126,47 @@ export default function HealthPanel({
         </span>
       </div>
 
+      {/* ── le matériel, en BoardUI Meter ────────────────────────
+         Deux niveaux dans un range connu, avec leurs vrais seuils :
+         la T4 se bride elle-même dès ~77 °C (SW Power Cap) — le
+         warning commence avant, à 74, parce que la cause (la
+         puissance) précise l'effet ; l'erreur à 84 laisse une
+         marge au bruit de lecture. La VRAM ne prévient pas : à
+         90 % un process de plus OOM le trainer et coûte jusqu'à
+         500 steps — le ton monte tôt et le dit. Pas de
+         `live.gpu` → pas de rangée : un absence de donnée n'est
+         jamais rendue comme une donnée. */}
+      {live?.gpu ? (
+        <div className="grid gap-x-6 gap-y-2 border-b border-line/60 px-4 py-3 sm:grid-cols-2">
+          <Meter
+            label="température GPU"
+            minValue={30}
+            maxValue={90}
+            value={live.gpu.temp_c}
+            valueLabel={`${live.gpu.temp_c.toFixed(0)} °C`}
+            tone={
+              live.gpu.temp_c >= 84 ? "error" : live.gpu.temp_c >= 74 ? "warning" : "success"
+            }
+            size="sm"
+          />
+          <Meter
+            label="mémoire vidéo"
+            minValue={0}
+            maxValue={live.gpu.vram_total_gb || 15}
+            value={live.gpu.vram_used_gb}
+            valueLabel={`${live.gpu.vram_used_gb.toFixed(1)} / ${(live.gpu.vram_total_gb || 15).toFixed(0)} GiB`}
+            tone={
+              live.gpu.vram_used_gb / (live.gpu.vram_total_gb || 15) >= 0.97
+                ? "error"
+                : live.gpu.vram_used_gb / (live.gpu.vram_total_gb || 15) >= 0.9
+                  ? "warning"
+                  : "accent"
+            }
+            size="sm"
+          />
+        </div>
+      ) : null}
+
       <div className="grid gap-x-6 gap-y-1.5 px-4 py-3 sm:grid-cols-2">
         {health.checks.map((c) => (
           <div key={c.id} className="flex items-start gap-2 text-[11.5px]">

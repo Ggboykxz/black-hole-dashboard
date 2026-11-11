@@ -25,7 +25,15 @@ export function Card({
               {title}
             </h2>
             {source ? (
-              <p className="mt-0.5 truncate font-mono text-[10px] text-faint">
+              <p
+                className="mt-0.5 truncate font-mono text-[10px] text-faint"
+                /* la source est souvent tronquée par `truncate` — le
+                   title natif rend le texte entier au survol partout
+                   où la carte apparaît, sans hydrater un overlay par
+                   carte (un BoardUI Tooltip ici poserait dix déclencheurs
+                   focusables par page dans l'ordre de tabulation) */
+                title={typeof source === "string" ? source : undefined}
+              >
                 {source}
               </p>
             ) : null}
