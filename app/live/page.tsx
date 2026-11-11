@@ -3,6 +3,7 @@ import Chart from "@/components/chart";
 import LivePanel from "@/components/live";
 import Swarm from "@/components/swarm";
 import Assistant from "@/components/assistant";
+import { ToastStack } from "@/components/toast-stack";
 import { getSnapshot } from "@/lib/snapshot";
 import { buildBots } from "@/lib/bots";
 import { f5, when } from "@/lib/format";
@@ -38,6 +39,15 @@ export default async function LivePage() {
         source="un par acteur du système — déplace-les, clique-les"
       >
         <Swarm bots={buildBots(s, null)} height={300} />
+      </Card>
+
+      <Card
+        title="La pile de notifications"
+        source="passez le pointeur dessus : la pile se déplie, un clic sur Réessayer retourne l'échec — micro-activité, jamais une métrique"
+      >
+        <div className="flex justify-center py-2">
+          <ToastStack />
+        </div>
       </Card>
 
       <LivePanel
