@@ -1465,3 +1465,47 @@ table.dt tbody tr:hover {
 
 @keyframes pet-caret {
   50% { opacity: 0; }}
+
+/* ════════════════════════════════════════════════════════════
+   ── passe accessibilité des six études Bencho ──────────────
+   Deux filets, posés ici une seule fois pour les six composants :
+
+   1. Clavier. La référence pilotait tout au pointeur ; le
+      toggle (`role="switch"`), le portefeuille (`Entrée`
+      actualise), le dock (de vrais `<button>`) avaient déjà
+      leur geste clavier. Ajoutés côté composants : la balle du
+      DraggingBall se déplace aux flèches (les mêmes motion
+      values que le drag — un seul corps, pas deux), la balle
+      de l'EyeTracker répond à Entrée/Espace.
+
+   2. `prefers-reduced-motion`. Chaque composant gère son
+      ressort en JS (EyeTracker : `stillness()` fige le
+      ressort ; ToastStack : `useReducedMotion`). Ce filet CSS
+      couvre ce que le JS ne voit pas : les transitions
+      décoratives — l'aimantation du dock, le gonflement de la
+      balle, le clignement — s'arrêtent net au lieu de
+      s'exécuter en silence. Durée 1ms et pas `none` : les
+      états finaux (opacité d'un toast ouvert, position du
+      caret) restent corrects sans attendre une transition.
+      Seule `pet-caret` est tuée franchement : un caret qui
+      clignote est du bruit, pas un état. */
+@media (prefers-reduced-motion: reduce) {
+  .tst-stack *, .liq-root *, .bal *, .drg-well *, .gdock-root *, .eyt-ball {
+    transition-duration: 1ms !important;
+    animation: none !important;
+  }
+}
+
+/* la prise de focus des deux jouets à balle : le contour global
+   `:focus-visible` existe déjà (voir plus haut) mais ces deux-là
+   sont des SVG/span ronds — un rectangle aux angles droits sur
+   un cercle lit comme un bug, donc le leur suit la forme */
+.drg-well:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: 18px;}
+
+.eyt-ball:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: 50%;}

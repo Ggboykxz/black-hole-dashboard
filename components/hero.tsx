@@ -5,6 +5,7 @@ import type { Snapshot } from "@/lib/types";
 import { Stat, Badge } from "./ui";
 import { useLiveFeed } from "./live-provider";
 import { compact, f2, f4, f5, hours, int, pct, step as fmtStep } from "@/lib/format";
+import { useCountUp } from "@/lib/use-count-up";
 import { humanAge } from "@/lib/signal";
 
 /**
@@ -36,6 +37,13 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
   const loss = live?.train_loss ?? st.train_loss;
   const lr = live?.lr ?? st.lr;
   const val = live?.val_loss ?? st.val_last?.loss ?? null;
+
+  /* the headline step rolls from the previous poll's value instead of
+     snapping — the poll lands every 30 s and a step that jumps by
+     twenty reads as a glitch, while a number that glides there reads
+     as the run progressing (BoardUI's use-count-up, integers only —
+     the hook rounds, so it never dresses the losses) */
+  const stepShown = useCountUp(step, 420);
 
   const sourceLabel = useMemo(
     () =>
@@ -79,7 +87,7 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
               </span>
             </div>
             <h1 className="num mt-1.5 text-[26px] leading-tight font-medium tracking-tight text-ink">
-              {fmtStep(step)}{" "}
+              {fmtStep(stepShown)}{" "}
               <span className="text-faint">/ {fmtStep(maxSteps)} steps</span>
             </h1>
             <p className="mt-1 text-[12.5px] text-dim">

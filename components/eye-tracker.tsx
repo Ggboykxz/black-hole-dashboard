@@ -478,7 +478,15 @@ export function EyeTracker({
         className="eyt-ball"
         viewBox="0 0 100 100"
         data-poke={idle ? undefined : true}
+        role={idle ? undefined : "button"}
+        tabIndex={idle ? undefined : 0}
+        aria-label={idle ? undefined : "Toucher la balle : elle répond"}
         onClick={poke}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          void poke();
+        }}
       >
         <defs>
           <clipPath id={clip}>

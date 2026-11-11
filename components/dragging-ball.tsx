@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useMotionValue } from "framer-motion";
 import { Liquid } from "liquid-gooey";
 
 /* ══ Dragging ball ════════════════════════════════════════
@@ -185,10 +185,39 @@ export function DraggingBall({
      circle can touch each edge and go no further */
   const reach = { x: (WELL.w - size) / 2, y: (WELL.h - size) / 2 };
 
+  /* ── the same values the drag uses, held here for the keys ──
+     Framer's `drag` writes into x and y motion values given in
+     `style` — passing ours makes the pointer and the keyboard
+     move ONE ball, not two. The nudge step is 28px: a fifth of
+     the reach, six presses to a wall, coarse like a finger
+     rather than smooth like a pointer. */
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const nudge = (dx: number, dy: number) => {
+    x.set(Math.min(reach.x, Math.max(-reach.x, x.get() + dx)));
+    y.set(Math.min(reach.y, Math.max(-reach.y, y.get() + dy)));
+  };
+
   return (
     <div
       className="drg-well"
       ref={box}
+      tabIndex={0}
+      role="application"
+      aria-label="Balle à traîner dans son puits. Flèches du clavier pour la déplacer, pointeur pour la traîner."
+      onKeyDown={(e) => {
+        const step = 28;
+        const map: Record<string, [number, number]> = {
+          ArrowLeft: [-step, 0],
+          ArrowRight: [step, 0],
+          ArrowUp: [0, -step],
+          ArrowDown: [0, step],
+        };
+        const d = map[e.key];
+        if (!d) return;
+        e.preventDefault();
+        nudge(d[0], d[1]);
+      }}
       style={{ "--k": k, width: WELL.w, height: WELL.h } as React.CSSProperties}
     >
       <Liquid
@@ -254,7 +283,7 @@ export function DraggingBall({
         >
           <motion.span
             className="drg-ball"
-            style={{ width: size, height: size }}
+            style={{ width: size, height: size, x, y }}
             drag
             /* Numeric, not a ref: the constraint is a distance
                from where the ball already sits, and the ball

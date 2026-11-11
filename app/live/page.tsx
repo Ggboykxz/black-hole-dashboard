@@ -48,15 +48,24 @@ export default async function LivePage() {
 
       <Card
         title="La micro-activité"
-        source="six études Bencho (MIT) habillées aux tokens du dashboard — déplacez, tirez, cliquez : rien ici n'est une métrique"
+        source="six études Bencho (MIT) + un hook BoardUI, habillées aux tokens du dashboard — rien ici n'est une métrique"
       >
-        <div className="flex flex-wrap items-center justify-center gap-8 py-4">
-          <ToastStack />
-          <LiquidToggle />
-          <DraggingBall />
-          <PullToRefresh />
-          <MagnifyingDock />
-          <EyeTracker />
+        <div className="flex flex-wrap items-start justify-center gap-x-8 gap-y-6 py-4">
+          {[
+            { caption: "survolez — la pile se déplie", widget: <ToastStack /> },
+            { caption: "cliquez — la goutte traverse", widget: <LiquidToggle /> },
+            { caption: "traînez-la — ou flèches du clavier", widget: <DraggingBall /> },
+            { caption: "tirez vers le bas — elle cède, puis rebondit", widget: <PullToRefresh /> },
+            { caption: "survolez — les icônes grossissent", widget: <MagnifyingDock /> },
+            { caption: "elle vous suit du regard — cliquez-la", widget: <EyeTracker /> },
+          ].map(({ caption, widget }) => (
+            <figure key={caption} className="flex flex-col items-center gap-2">
+              {widget}
+              <figcaption className="max-w-[200px] text-center font-mono text-[10px] leading-relaxed text-faint">
+                {caption}
+              </figcaption>
+            </figure>
+          ))}
         </div>
       </Card>
 
