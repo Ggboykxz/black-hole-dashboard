@@ -151,11 +151,40 @@ export default async function RootLayout({
                  gardien veille sans jamais vous regarder faire,
                  la balle se traîne, le portefeuille cède et
                  rebondit. C'est la signature du site, pas une
-                 vitrine séparée quelque part. */}
-              <div className="mt-4 flex flex-wrap items-end justify-end gap-x-6 gap-y-2 border-t border-line pt-4">
-                <EyeTracker idle size={64} />
-                <DraggingBall size={48} />
-                <PullToRefresh />
+                 vitrine séparée quelque part.
+
+                 Chaque étude dans sa tuile de verre : à même le
+                 fond du footer, leurs pleins sombres disparaissaient
+                 — la capture d'écran montrait un footer vide. La
+                 tuile leur rend une surface, la légende dit quoi
+                 faire ; PullToRefresh est ramené à 0,6 (il fait
+                 300px d'étude, le footer n'est pas un labo). */}
+              <div className="mt-4 flex flex-wrap items-stretch justify-end gap-3 border-t border-line pt-4">
+                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/60 p-4">
+                  <EyeTracker idle size={64} />
+                  <figcaption className="text-center font-mono text-[9.5px] leading-relaxed text-faint">
+                    elle regarde ailleurs<br />de temps en temps
+                  </figcaption>
+                </figure>
+                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/60 p-4">
+                  <DraggingBall size={48} />
+                  <figcaption className="text-center font-mono text-[9.5px] leading-relaxed text-faint">
+                    traînez-la, lâchez-la —<br />elle garde son élan
+                  </figcaption>
+                </figure>
+                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/60 p-4">
+                  {/* 300px d'étude réduits à 0,6 ≈ 180px ; le wrapper
+                     réserve la taille réduite, l'enfant reste au
+                     corner supérieur (l'étude pousse depuis le haut) */}
+                  <span className="relative block h-[168px] w-[180px]">
+                    <span className="absolute left-1/2 top-0 origin-top -translate-x-1/2 scale-[0.6]">
+                      <PullToRefresh />
+                    </span>
+                  </span>
+                  <figcaption className="text-center font-mono text-[9.5px] leading-relaxed text-faint">
+                    tirez la carte vers le bas —<br />elle cède, puis rebondit
+                  </figcaption>
+                </figure>
               </div>
             </footer>
           </div>
@@ -175,9 +204,12 @@ export default async function RootLayout({
         </div>
 
         {/* la pile de notifications du run, flottante en bas à
-           droite — elle se déplie au survol, au-dessus du contenu,
-           jamais dans le flux d'une page */}
-        <div className="fixed bottom-5 right-5 z-30 hidden lg:block">
+           GAUCHE — le copilote occupe le coin bas-droit, deux
+           surfaces flottantes se disputaient le même coin et la
+           pile finissait derrière son panneau ; à gauche elle
+           se déplie au survol, au-dessus du contenu, jamais
+           dans le flux d'une page */}
+        <div className="fixed bottom-5 left-5 z-30 hidden lg:block">
           <ToastStack />
         </div>
         </LiveProvider>
