@@ -4,6 +4,11 @@ import LivePanel from "@/components/live";
 import Swarm from "@/components/swarm";
 import Assistant from "@/components/assistant";
 import { ToastStack } from "@/components/toast-stack";
+import { LiquidToggle } from "@/components/liquid-toggle";
+import { PullToRefresh } from "@/components/pull-to-refresh";
+import { DraggingBall } from "@/components/dragging-ball";
+import { MagnifyingDock } from "@/components/magnifying-dock";
+import { EyeTracker } from "@/components/eye-tracker";
 import { getSnapshot } from "@/lib/snapshot";
 import { buildBots } from "@/lib/bots";
 import { f5, when } from "@/lib/format";
@@ -42,11 +47,16 @@ export default async function LivePage() {
       </Card>
 
       <Card
-        title="La pile de notifications"
-        source="passez le pointeur dessus : la pile se déplie, un clic sur Réessayer retourne l'échec — micro-activité, jamais une métrique"
+        title="La micro-activité"
+        source="six études Bencho (MIT) habillées aux tokens du dashboard — déplacez, tirez, cliquez : rien ici n'est une métrique"
       >
-        <div className="flex justify-center py-2">
+        <div className="flex flex-wrap items-center justify-center gap-8 py-4">
           <ToastStack />
+          <LiquidToggle />
+          <DraggingBall />
+          <PullToRefresh />
+          <MagnifyingDock />
+          <EyeTracker />
         </div>
       </Card>
 
