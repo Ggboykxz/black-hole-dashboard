@@ -66,10 +66,10 @@ const ICON: Record<Kind, LucideIcon> = {
    eu lieu. Une fausse alerte est pire que pas d'alerte — elle
    apprend à lire les vraies. Ce filet ne dit que des faits vérifiables
    sur la page. */
-const POOL: Omit<Toast, "id">[] = [
-  { kind: "info", title: "Le direct écrit", body: "Le producteur écrit dans le log toutes les ~10 s." },
-  { kind: "info", title: "Même source que la doc", body: "Le dashboard lit les artefacts, il ne les recalcule pas." },
-  { kind: "info", title: "Rien à signaler", body: "Aucune alerte active sur ce run." },
+const POOL: Toast[] = [
+  { id: "filet-ecriture", kind: "info", title: "Le direct écrit", body: "Le producteur écrit dans le log toutes les ~10 s." },
+  { id: "filet-source", kind: "info", title: "Même source que la doc", body: "Le dashboard lit les artefacts, il ne les recalcule pas." },
+  { id: "filet-rien", kind: "info", title: "Rien à signaler", body: "Aucune alerte active sur ce run." },
 ];
 
 const W = 300;
