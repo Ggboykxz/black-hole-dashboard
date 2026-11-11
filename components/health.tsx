@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Snapshot } from "@/lib/types";
 import { buildHealth, type Health } from "@/lib/health";
+import { Meter } from "@/components/base/meter/meter";
 import { useLiveFeed } from "./live-provider";
 import { humanAge } from "@/lib/signal";
 

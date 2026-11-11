@@ -1,6 +1,20 @@
 <!-- boardui:rules:start -->
 # BoardUI design rules
 
+> **Doctrine de cohabitation (projet Black Hole).** Ce site a son propre
+> système de design — le verre sombre de `app/globals.css` (tokens
+> `--ink`, `--panel`, `--accent`…) et les études Bencho habillées à ces
+> tokens. Les règles BoardUI ci-dessous s'appliquent **aux composants
+> issus de BoardUI** (palette, skeletons, tooltips, meters) et à tout
+> nouveau bloc construit sur eux. Elles ne s'appliquent pas en
+> réécriture des surfaces existantes : ne convertissez pas les
+> `text-ink`/`bg-panel` du site vers les tokens BoardUI, et ne
+> supprimez pas `app/globals.css` — il n'est PAS le stylesheet de
+> create-next-app, contrairement à ce que suggère l'installateur.
+> Import order in `app/layout.tsx` : BoardUI `styles/globals.css`
+> d'abord, puis `./globals.css` — les nôtres gagnent.
+
+
 This project uses BoardUI (React + Tailwind CSS v4, source-owned components under `components/`). These rules always apply when writing UI code. MCP tools are on demand; these rules are not optional context.
 
 ## Components first
