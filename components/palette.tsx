@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
 import { CommandPalette, CommandPaletteItem, CommandPaletteSection } from "@/components/base/command-palette/command-palette";
 import {
   RiHome4Line,
@@ -54,7 +53,6 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
    le même état que le toggle du header. */
 export default function Palette() {
   const router = useRouter();
-  const pathname = usePathname();
   const { paused, setPaused } = useLiveFeed();
   /* contrôlée : le bouton ⌘K du header l'ouvre via l'événement
      `bh:palette` (le bouton est loin d'ici, un store partagé serait

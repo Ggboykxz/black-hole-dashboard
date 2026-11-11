@@ -3,12 +3,6 @@ import Chart from "@/components/chart";
 import LivePanel from "@/components/live";
 import Swarm from "@/components/swarm";
 import Assistant from "@/components/assistant";
-import { ToastStack } from "@/components/toast-stack";
-import { LiquidToggle } from "@/components/liquid-toggle";
-import { PullToRefresh } from "@/components/pull-to-refresh";
-import { DraggingBall } from "@/components/dragging-ball";
-import { MagnifyingDock } from "@/components/magnifying-dock";
-import { EyeTracker } from "@/components/eye-tracker";
 import { getSnapshot } from "@/lib/snapshot";
 import { buildBots } from "@/lib/bots";
 import { f5, when } from "@/lib/format";
@@ -46,28 +40,10 @@ export default async function LivePage() {
         <Swarm bots={buildBots(s, null)} height={300} />
       </Card>
 
-      <Card
-        title="La micro-activité"
-        source="six études Bencho (MIT) + un hook BoardUI, habillées aux tokens du dashboard — rien ici n'est une métrique"
-      >
-        <div className="flex flex-wrap items-start justify-center gap-x-8 gap-y-6 py-4">
-          {[
-            { caption: "survolez — la pile se déplie", widget: <ToastStack /> },
-            { caption: "cliquez — la goutte traverse", widget: <LiquidToggle /> },
-            { caption: "traînez-la — ou flèches du clavier", widget: <DraggingBall /> },
-            { caption: "tirez vers le bas — elle cède, puis rebondit", widget: <PullToRefresh /> },
-            { caption: "survolez — les icônes grossissent", widget: <MagnifyingDock /> },
-            { caption: "elle vous suit du regard — cliquez-la", widget: <EyeTracker /> },
-          ].map(({ caption, widget }) => (
-            <figure key={caption} className="flex flex-col items-center gap-2">
-              {widget}
-              <figcaption className="max-w-[200px] text-center font-mono text-[10px] leading-relaxed text-faint">
-                {caption}
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-      </Card>
+      {/* les six études Bencho ne vivent plus ici : le dock est la nav
+          mobile, le toggle la pause du direct, la pile de toasts est
+          flottante au niveau du site, et les trois sans fonction sont
+          dans l'atelier du pied de page (layout.tsx) */}
 
       <LivePanel
         initial={s.series.train.map((p) => ({ x: p.step, y: p.loss }))}

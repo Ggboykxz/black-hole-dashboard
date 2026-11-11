@@ -17,6 +17,7 @@ import LiveHeader, { RailStatus } from "@/components/live-header";
 import { LiveProvider } from "@/components/live-provider";
 import SignalRibbon from "@/components/signal-ribbon";
 import Palette from "@/components/palette";
+import PaletteTrigger from "@/components/palette-trigger";
 import { MagnifyingDock } from "@/components/magnifying-dock";
 import { ToastStack } from "@/components/toast-stack";
 import { EyeTracker } from "@/components/eye-tracker";
@@ -118,16 +119,7 @@ export default async function RootLayout({
               <div className="flex shrink-0 items-center gap-3 pr-4 md:pr-7">
                 {/* la prise visible de la palette — ⌘K marche partout,
                    le bouton dit aux autres qu'elle existe */}
-                <button
-                  onClick={() => window.dispatchEvent(new CustomEvent("bh:palette"))}
-                  className="hidden items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-[11px] text-faint transition-colors hover:border-accent/40 hover:text-ink sm:flex"
-                  aria-label="Ouvrir la palette de commandes (Ctrl+K)"
-                >
-                  Rechercher…
-                  <kbd className="rounded border border-line bg-panel2 px-1 py-px font-mono text-[9.5px] text-faint">
-                    ⌘K
-                  </kbd>
-                </button>
+                <PaletteTrigger />
                 <Notifications snapshot={snapshot} />
               </div>
             </header>

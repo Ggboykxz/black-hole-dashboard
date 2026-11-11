@@ -3,6 +3,8 @@
 import { useMemo } from "react";
 import type { Snapshot } from "@/lib/types";
 import { Stat, Badge } from "./ui";
+import { Focusable } from "react-aria-components";
+import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { useLiveFeed } from "./live-provider";
 import { compact, f2, f4, f5, hours, int, pct, step as fmtStep } from "@/lib/format";
 import { useCountUp } from "@/lib/use-count-up";
@@ -98,9 +100,22 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
             </p>
           </div>
           <div className="flex flex-col items-end gap-1.5">
-            <Badge tone="accent">
-              bench {last ? f5(last.loss) : "—"} @ {last?.step ?? "—"}
-            </Badge>
+            {/* le tooltip BoardUI explique le protocole : un badge qui
+               dit « bench 3.85 @ 24500 » sans dire comment il a été
+               mesuré invite la mauvaise comparaison avec la val du run
+               — la légende vit au survol et à la prise de focus */}
+            <TooltipTrigger delay={0}>
+              <Focusable>
+                <Badge tone="accent">
+                  bench {last ? f5(last.loss) : "—"} @ {last?.step ?? "—"}
+                </Badge>
+              </Focusable>
+              <Tooltip>
+                protocole fixe val-25×8×1024-seed1234-fp16 — étiqueté au
+                step de son checkpoint ; diffère de la val du run de
+                quelques 1e-2
+              </Tooltip>
+            </TooltipTrigger>
             <Badge tone={p5?.verdict === "miss" ? "bad" : "muted"}>
               P5 {p5?.verdict === "miss" ? "manquée" : "—"}
             </Badge>

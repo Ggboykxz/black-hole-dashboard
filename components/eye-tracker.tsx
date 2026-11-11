@@ -472,7 +472,11 @@ export function EyeTracker({
       ref={box}
       style={{ "--eyt-size": `${s}px` } as React.CSSProperties}
       role="img"
-      aria-label="Une balle aux deux yeux qui suit le curseur"
+      aria-label={
+        idle
+          ? "La mascotte du dashboard : elle cligne des yeux et regarde ailleurs de temps en temps"
+          : "Une balle aux deux yeux qui suit le curseur"
+      }
     >
       <svg
         className="eyt-ball"

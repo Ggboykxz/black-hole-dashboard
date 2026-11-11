@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useLiveFeed } from "./live-provider";
+import { LiquidToggle } from "./liquid-toggle";
 import type { Change } from "@/lib/changes";
 import type { SampleKey } from "@/lib/metrics";
 import { f2, f4, hours, int, pct, step as fmtStep } from "@/lib/format";

@@ -1490,7 +1490,7 @@ table.dt tbody tr:hover {
       Seule `pet-caret` est tuée franchement : un caret qui
       clignote est du bruit, pas un état. */
 @media (prefers-reduced-motion: reduce) {
-  .tst-stack *, .liq-root *, .bal *, .drg-well *, .gdock-root *, .eyt-ball {
+  .tst *, .liq-well *, .bal *, .drg-well *, .gdock *, .eyt-ball {
     transition-duration: 1ms !important;
     animation: none !important;
   }
