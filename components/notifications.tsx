@@ -122,7 +122,13 @@ export default function Notifications({ snapshot }: { snapshot: Snapshot }) {
 
   // ---- the rules, recomputed whenever the shared feed changes -------------
   useEffect(() => {
-    const active = buildAlerts(feed.live, snapshotRef.current);
+    /* seules les mesures reçues valent alerte : avant le premier
+       poll, `feed.live` est le journal restauré, dont l'âge est
+       l'âge de la copie — l'alerter dessus reviendrait à annoncer
+       « signal figé depuis 340 s » sur un run qui écrit. Tant que
+       le premier poll n'a pas répondu, on n'alerte rien : le
+       silence de quelques secondes n'est pas un incident. */
+    const active = feed.verified ? buildAlerts(feed.live, snapshotRef.current) : [];
     setAlerts(active);
 
     const now = Date.now();

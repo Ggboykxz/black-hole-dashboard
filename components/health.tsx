@@ -29,14 +29,20 @@ export default function HealthPanel({
 }) {
   const feed = useLiveFeed();
   const { live } = feed;
+  /* tant que le premier poll n'a pas répondu, `live` est le journal
+     restauré du navigateur : son âge est l'âge de la copie, pas celui
+     du producteur. Un verdict de santé posé dessus dit "le trainer
+     est probablement mort" alors qu'il tourne — on ne le construit
+     qu'à partir d'une mesure réellement reçue. */
+  const measured = feed.verified ? live : null;
   const [health, setHealth] = useState<Health>(() => buildHealth(snapshot, null));
 
   // the panel reads the shared feed: one request for the whole site, and the
   // health is recomputed from the payload that was really received — a failed
   // request is itself a signal, not a silence.
   useEffect(() => {
-    setHealth(buildHealth(snapshot, live ?? null));
-  }, [snapshot, live]);
+    setHealth(buildHealth(snapshot, measured ?? null));
+  }, [snapshot, measured]);
 
   const tone = TONE[health.level];
   const problems = health.checks.filter((c) => c.level !== "ok");
@@ -100,7 +106,7 @@ export default function HealthPanel({
                 : feed.source === "snapshot"
                   ? "instantané figé"
                   : "aucune source"}{" "}
-          · {live?.updated_at?.slice(11, 19) ?? "—"} UTC ·{" "}
+          · {measured?.updated_at?.slice(11, 19) ?? "—"} UTC ·{" "}
           <span style={{ color: feed.meta.color }}>{feed.meta.label}</span>
         </span>
       </div>
@@ -134,31 +140,31 @@ export default function HealthPanel({
          marge au bruit de lecture. La VRAM ne prévient pas : à
          90 % un process de plus OOM le trainer et coûte jusqu'à
          500 steps — le ton monte tôt et le dit. Pas de
-         `live.gpu` → pas de rangée : un absence de donnée n'est
+         `measured.gpu` → pas de rangée : un absence de donnée n'est
          jamais rendue comme une donnée. */}
-      {live?.gpu ? (
+      {measured?.gpu ? (
         <div className="grid gap-x-6 gap-y-2 border-b border-line/60 px-4 py-3 sm:grid-cols-2">
           <Meter
             label="température GPU"
             minValue={30}
             maxValue={90}
-            value={live.gpu.temp_c}
-            valueLabel={`${live.gpu.temp_c.toFixed(0)} °C`}
+            value={measured.gpu.temp_c}
+            valueLabel={`${measured.gpu.temp_c.toFixed(0)} °C`}
             tone={
-              live.gpu.temp_c >= 84 ? "error" : live.gpu.temp_c >= 74 ? "warning" : "success"
+              measured.gpu.temp_c >= 84 ? "error" : measured.gpu.temp_c >= 74 ? "warning" : "success"
             }
             size="sm"
           />
           <Meter
             label="mémoire vidéo"
             minValue={0}
-            maxValue={live.gpu.vram_total_gb || 15}
-            value={live.gpu.vram_used_gb}
-            valueLabel={`${live.gpu.vram_used_gb.toFixed(1)} / ${(live.gpu.vram_total_gb || 15).toFixed(0)} GiB`}
+            maxValue={measured.gpu.vram_total_gb || 15}
+            value={measured.gpu.vram_used_gb}
+            valueLabel={`${measured.gpu.vram_used_gb.toFixed(1)} / ${(measured.gpu.vram_total_gb || 15).toFixed(0)} GiB`}
             tone={
-              live.gpu.vram_used_gb / (live.gpu.vram_total_gb || 15) >= 0.97
+              measured.gpu.vram_used_gb / (measured.gpu.vram_total_gb || 15) >= 0.97
                 ? "error"
-                : live.gpu.vram_used_gb / (live.gpu.vram_total_gb || 15) >= 0.9
+                : measured.gpu.vram_used_gb / (measured.gpu.vram_total_gb || 15) >= 0.9
                   ? "warning"
                   : "accent"
             }

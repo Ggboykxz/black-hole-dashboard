@@ -217,9 +217,11 @@ export function buildHealth(snapshot: Snapshot, live: Live | null): Health {
       detail: `blocs de statut régénérés il y a ${Math.floor(pushAgo / 60)} min`,
       action:
         pushAgo > 1200
-          ? keepaliveLikelyAlive
-            ? "Le signal du run est frais — ce sont les blocs de statut servis qui datent (build statique). Vérifier le dernier cycle : `tail runs/bh-005/keepalive.log`"
-            : "Le keepalive ne tourne plus : `bash scripts/watch_keepalive.sh configs/train-100m-bh005.json`"
+          ? l === null
+            ? "L'âge affiché vient de l'instantané embarqué (le premier poll n'a pas encore répondu) — la documentation suit ou non, on ne le sait pas encore."
+            : keepaliveLikelyAlive
+              ? "Le signal du run est frais — ce sont les blocs de statut servis qui datent (build statique). Vérifier le dernier cycle : `tail runs/bh-005/keepalive.log`"
+              : "Le keepalive ne tourne plus : `bash scripts/watch_keepalive.sh configs/train-100m-bh005.json`"
           : undefined,
     });
   }
