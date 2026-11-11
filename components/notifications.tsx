@@ -346,7 +346,11 @@ export default function Notifications({ snapshot }: { snapshot: Snapshot }) {
   return (
     <div className="relative" data-bot-target="notifications">
       {/* ------------------------------------------------------- toasts */}
-      <div className="pointer-events-none fixed right-3 top-14 z-[60] flex w-[calc(100vw-1.5rem)] max-w-[350px] flex-col gap-2 sm:right-4">
+      {/* toasts — sous la barre d'état, pas sur elle : à top-14 ils
+         recouvraient la pause du direct qui vit au bout de cette
+         barre (les deux sont en haut à droite, l'alerte volante
+         mangeait la commande) */}
+      <div className="pointer-events-none fixed right-3 top-24 z-[60] flex w-[calc(100vw-1.5rem)] max-w-[350px] flex-col gap-2 sm:right-4">
         {toasts.map(({ alert }) => {
           const tone = TONE[alert.level];
           return (

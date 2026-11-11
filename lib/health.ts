@@ -196,6 +196,20 @@ export function buildHealth(snapshot: Snapshot, live: Live | null): Health {
     ? Math.round((now - new Date(s.status.generated_at).getTime()) / 1000)
     : null;
   if (pushAgo !== null) {
+    /* « docs anciens » a deux causes très différentes, et le message
+       doit faire la différence : le keepalive mort (le heartbeat est
+       vieux aussi — l'action est de le relancer), ou une page servie
+       depuis un build statique dont l'artefact empaqueté date du
+       build (le heartbeat, lui, est frais — le run va bien, c'est
+       l'affichage qui est en retard d'un cycle). Sans cette distinction
+       le panneau affirmait « le keepalive ne tourne plus » sur un run
+       dont le signal battait à 8 s. */
+    const signalAgo = live?.read_at
+      ? Math.round((now - new Date(live.read_at).getTime()) / 1000)
+      : live?.updated_at
+        ? Math.round((now - new Date(live.updated_at).getTime()) / 1000)
+        : null;
+    const keepaliveLikelyAlive = signalAgo !== null && signalAgo < 120;
     checks.push({
       id: "docs",
       label: "Documentation",
@@ -203,7 +217,9 @@ export function buildHealth(snapshot: Snapshot, live: Live | null): Health {
       detail: `blocs de statut régénérés il y a ${Math.floor(pushAgo / 60)} min`,
       action:
         pushAgo > 1200
-          ? "Le keepalive ne tourne plus : `bash scripts/watch_keepalive.sh configs/train-100m-bh005.json`"
+          ? keepaliveLikelyAlive
+            ? "Le signal du run est frais — ce sont les blocs de statut servis qui datent (build statique). Vérifier le dernier cycle : `tail runs/bh-005/keepalive.log`"
+            : "Le keepalive ne tourne plus : `bash scripts/watch_keepalive.sh configs/train-100m-bh005.json`"
           : undefined,
     });
   }

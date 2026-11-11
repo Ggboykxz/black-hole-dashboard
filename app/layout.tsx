@@ -159,20 +159,20 @@ export default async function RootLayout({
                  tuile leur rend une surface, la légende dit quoi
                  faire ; PullToRefresh est ramené à 0,6 (il fait
                  300px d'étude, le footer n'est pas un labo). */}
-              <div className="mt-4 flex flex-wrap items-stretch justify-end gap-3 border-t border-line pt-4">
-                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/60 p-4">
+              <div className="mt-4 flex flex-wrap items-stretch justify-center gap-3 border-t border-line pt-4">
+                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   <EyeTracker idle size={64} />
-                  <figcaption className="text-center font-mono text-[9.5px] leading-relaxed text-faint">
+                  <figcaption className="text-center font-mono text-[10px] leading-relaxed text-dim">
                     elle regarde ailleurs<br />de temps en temps
                   </figcaption>
                 </figure>
-                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/60 p-4">
+                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   <DraggingBall size={48} />
-                  <figcaption className="text-center font-mono text-[9.5px] leading-relaxed text-faint">
+                  <figcaption className="text-center font-mono text-[10px] leading-relaxed text-dim">
                     traînez-la, lâchez-la —<br />elle garde son élan
                   </figcaption>
                 </figure>
-                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/60 p-4">
+                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   {/* 300px d'étude réduits à 0,6 ≈ 180px ; le wrapper
                      réserve la taille réduite, l'enfant reste au
                      corner supérieur (l'étude pousse depuis le haut) */}
@@ -181,7 +181,7 @@ export default async function RootLayout({
                       <PullToRefresh />
                     </span>
                   </span>
-                  <figcaption className="text-center font-mono text-[9.5px] leading-relaxed text-faint">
+                  <figcaption className="text-center font-mono text-[10px] leading-relaxed text-dim">
                     tirez la carte vers le bas —<br />elle cède, puis rebondit
                   </figcaption>
                 </figure>
