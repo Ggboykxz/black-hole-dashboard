@@ -206,11 +206,11 @@ export default async function RootLayout({
         {/* la pile de notifications du run, flottante en bas à
            GAUCHE — le copilote occupe le coin bas-droit, deux
            surfaces flottantes se disputaient le même coin et la
-           pile finissait derrière son panneau ; à gauche elle
-           se déplie au survol, au-dessus du contenu, jamais
-           dans le flux d'une page */}
-        <div className="fixed bottom-5 left-5 z-30 hidden lg:block">
-          <ToastStack />
+           pile finissait derrière son panneau. Elle part après le
+           rail (sticky, 228 px) pour ne masquer ni ses chiffres ni
+           ceux du copilote. */}
+        <div className="fixed bottom-5 left-64 z-30 hidden lg:block">
+          <ToastStack snapshot={snapshot} />
         </div>
         </LiveProvider>
       </body>

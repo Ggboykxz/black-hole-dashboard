@@ -1,8 +1,11 @@
 "use client";
 
-import { type CSSProperties, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { CircleCheck, CircleX, Info, TriangleAlert, X, type LucideIcon } from "lucide-react";
+import { buildAlerts } from "@/lib/alerts";
+import type { Snapshot } from "@/lib/types";
+import { useLiveFeed } from "./live-provider";
 
 /* ══ Toast stack ══════════════════════════════════════════
    Three toasts, always: the newest in front, the two before it
@@ -38,7 +41,16 @@ import { CircleCheck, CircleX, Info, TriangleAlert, X, type LucideIcon } from "l
    la même règle que les slimes du swarm, sans exception nouvelle. */
 
 type Kind = "success" | "info" | "error" | "warning";
-type Toast = { id: number; kind: Kind; title: string; body: string; action?: string };
+type Toast = {
+  id: string | number;
+  kind: Kind;
+  title: string;
+  body: string;
+  /** label of the small button */
+  action?: string;
+  /** the shell command the button copies */
+  command?: string;
+};
 
 const ICON: Record<Kind, LucideIcon> = {
   success: CircleCheck,
@@ -47,15 +59,17 @@ const ICON: Record<Kind, LucideIcon> = {
   warning: TriangleAlert,
 };
 
-/* le pool reprend les règles de notification du run (température GPU,
-   bridage de puissance, push Hub, mesure officielle) — les mêmes sujets
-   que le centre de notifications, en démonstration de micro-activité */
+/* ── le filet, quand la course n'a encore rien à dire ───────────────────
+   La pile était alimentée par un pool de démonstration, dont un
+   « Push du checkpoint refusé » : pendant que les pushes réussis-
+   saient, le site affichait en permanence un échec qui n'avait pas
+   eu lieu. Une fausse alerte est pire que pas d'alerte — elle
+   apprend à lire les vraies. Ce filet ne dit que des faits vérifiables
+   sur la page. */
 const POOL: Omit<Toast, "id">[] = [
-  { kind: "error", title: "Push du checkpoint refusé", body: "Le Hub a refusé le commit.", action: "Réessayer" },
-  { kind: "info", title: "Signal stale", body: "Aucun heartbeat depuis 40 s." },
-  { kind: "success", title: "Checkpoint écrit", body: "ckpt_step24500.pt — étape 24 500." },
-  { kind: "warning", title: "GPU à 77 °C", body: "Le T4 se bride : ~2,7 s/step attendus." },
-  { kind: "success", title: "Mesure officielle", body: "Bench 3.8538 @ 24 500 enregistré." },
+  { kind: "info", title: "Le direct écrit", body: "Le producteur écrit dans le log toutes les ~10 s." },
+  { kind: "info", title: "Même source que la doc", body: "Le dashboard lit les artefacts, il ne les recalcule pas." },
+  { kind: "info", title: "Rien à signaler", body: "Aucune alerte active sur ce run." },
 ];
 
 const W = 300;
@@ -68,22 +82,86 @@ export function ToastStack({
   peek = 14,
   gap = 10,
   corner = 18,
+  snapshot,
 }: {
   peek?: number;
   gap?: number;
   /* 18 = le rayon des cartes du dashboard (globals.css `.card`), pas les
      20 px de la référence — c'est le mapping de --tst-r */
   corner?: number;
+  /* l'instantané du run : il donne les faits (mesure, checkpoint) que
+     la pile affiche quand aucune alerte n'est active */
+  snapshot?: Snapshot;
 }) {
+  const feed = useLiveFeed();
+
+  /* ── ce que la pile affiche : les faits, pas une démonstration ──────
+     Les alertes viennent des mêmes règles que le centre de
+     notifications (une GPU bridée, un signal figé, une documentation
+     en retard) ; les deux faits de repli — la dernière mesure
+     officielle et le dernier checkpoint — sont lus dans
+     l'instantané. Tant qu'aucune mesure n'est arrivée, la pile
+     reste sur son filet neutre : annoncer « push refusé » pendant
+     que les pushes réussissent apprend à ignorer les alertes. */
+  const items = useMemo<Toast[]>(() => {
+    const out: Toast[] = [];
+    if (feed.verified && feed.live && snapshot) {
+      for (const a of buildAlerts(feed.live, snapshot)) {
+        out.push({
+          id: a.id,
+          kind: a.level === "critical" ? "error" : a.level === "warn" ? "warning" : "info",
+          title: a.title,
+          body: a.detail,
+          action: a.action ? "copier" : undefined,
+          command: a.action,
+        });
+      }
+      const bench = snapshot.benchmarks[snapshot.benchmarks.length - 1];
+      if (bench) {
+        out.push({
+          id: "bench",
+          kind: "success",
+          title: "Mesure officielle",
+          body: `bench ${bench.loss.toFixed(4)} @ ${bench.step} — protocole fixe, étiqueté à son step.`,
+        });
+      }
+      const ckpt = snapshot.checkpoints[snapshot.checkpoints.length - 1];
+      if (ckpt) {
+        out.push({
+          id: "checkpoint",
+          kind: "success",
+          title: "Checkpoint écrit",
+          body: `${ckpt.name} — étape ${ckpt.step}, ${ckpt.size_gb.toFixed(2)} Go.`,
+        });
+      }
+    }
+    return out;
+  }, [feed.live, feed.verified, snapshot]);
+
   /* front first; ids count up so a returning toast is a new element */
-  const next = useRef(SHOWN);
   const [stack, setStack] = useState<Toast[]>(() =>
-    POOL.slice(0, SHOWN).map((t, i) => ({ ...t, id: i })),
+    (items.length ? items : POOL).slice(0, SHOWN).map((t, i) => ({ ...t, id: t.id ?? i })),
   );
-  const [leaving, setLeaving] = useState<number | null>(null);
+  const [leaving, setLeaving] = useState<string | number | null>(null);
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement | null>(null);
   const still = useReducedMotion();
+
+  /* la pile suit les faits : ce qui arrive devient le front, ce qui
+     disparaît s'en va, ce qui reste ne bouge pas. */
+  const signature = (items ?? []).map((i) => `${i.id}:${i.title}`).join("|");
+  useEffect(() => {
+    const source = items.length ? items : POOL;
+    setStack((s) => {
+      const kept = s.filter((t) => source.some((src) => src.id === t.id));
+      const fresh = source
+        .filter((src) => !kept.some((t) => t.id === src.id))
+        .slice(0, SHOWN)
+        .map((src) => ({ ...src }));
+      const merged = [...fresh, ...kept].slice(0, SHOWN);
+      return merged.length ? merged : s;
+    });
+  }, [signature]);
 
   /* the frame is the open list's size; both states sit in its middle */
   const listH = SHOWN * H + (SHOWN - 1) * gap;
@@ -103,24 +181,29 @@ export function ToastStack({
     return { y: top + (SHOWN - 1 - d) * peek, scale: 1 - d * 0.05 };
   };
 
-  const dismiss = (id: number) => {
+  const dismiss = (id: string | number) => {
     if (leaving !== null) return;
     setLeaving(id);
     window.setTimeout(() => {
-      setStack((s) => {
-        const rest = s.filter((t) => t.id !== id);
-        const n = next.current++;
-        const fresh = { ...POOL[n % POOL.length], id: n };
-        return [fresh, ...rest];
-      });
+      setStack((s) => s.filter((t) => t.id !== id));
       setLeaving(null);
     }, 220);
   };
 
-  const retry = (id: number) => {
-    setStack((s) => s.map((t) => (t.id === id
-      ? { ...t, kind: "success", title: "Checkpoint poussé", body: "Le Hub a bien reçu le fichier.", action: undefined }
-      : t)));
+  /* le bouton d'action ne ment plus : il copie la commande de
+     l'alerte (celle que le panneau santé affiche en clair) au lieu
+     de rejouer un succès inventé. */
+  const [copied, setCopied] = useState<string | number | null>(null);
+  const copy = async (t: Toast) => {
+    if (!t.command) return;
+    try {
+      await navigator.clipboard.writeText(t.command);
+      setCopied(t.id);
+      window.setTimeout(() => setCopied(null), 1600);
+    } catch {
+      /* the clipboard may be refused — the command stays visible in
+         the notification centre, where it is written out in full */
+    }
   };
 
   return (
@@ -167,8 +250,8 @@ export function ToastStack({
               <span>{t.body}</span>
             </span>
             {t.action && (
-              <button type="button" className="tst-act" tabIndex={open || front ? 0 : -1} onClick={() => retry(t.id)}>
-                {t.action}
+              <button type="button" className="tst-act" tabIndex={open || front ? 0 : -1} onClick={() => copy(t)}>
+                {copied === t.id ? "copié" : t.action}
               </button>
             )}
             <button
