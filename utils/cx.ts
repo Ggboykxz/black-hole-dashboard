@@ -1,50 +1,61 @@
+import { extendTailwindMerge } from "tailwind-merge";
+
 /**
- * Class-name helpers used by the vendored BoardUI primitives.
+ * Text-style classes from styles/typography.css.
  *
- * `cx` is a small `classnames`-style joiner: strings, numbers, arrays and
- * condition maps, with falsy entries dropped. It deliberately does not pull
- * `clsx`/`tailwind-merge` into the bundle — the primitives only need the
- * joining half, and the project's own components already write literal
- * class strings.
+ * IMPORTANT: every text-* utility we define via @theme (e.g. `text-body-medium`,
+ * `text-title-1-semibold`) must be listed here. Otherwise tailwind-merge — which
+ * has no view of our Tailwind theme — treats them as text-color utilities and
+ * silently drops them when they appear in the same className as a real color
+ * (`text-foreground-full`, `text-text-primary`, etc).
  *
- * `sortCx` is the registry helper BoardUI uses to keep a component's class
- * map in one place. Its public contract here is identity: the object shape
- * (including nested size/tone maps) is what callers index at runtime, so it
- * must survive untouched.
+ * If you add or rename a text style in typography.css, mirror the change here.
  */
-type ClassDictionary = Record<string, boolean | null | undefined>;
-export type ClassValue =
-  | string
-  | number
-  | null
-  | false
-  | undefined
-  | ClassValue[]
-  | ClassDictionary;
+const TEXT_FAMILIES = [
+  "large-title",
+  "display-1",
+  "display-2",
+  "display-3",
+  "display-4",
+  "title-1",
+  "title-2",
+  "title-3",
+  "headline",
+  "body",
+  "body-2",
+  "caption-1",
+  "caption-2",
+] as const;
 
-export function cx(...inputs: ClassValue[]): string {
-  const out: string[] = [];
-  const visit = (value: ClassValue) => {
-    if (!value) return;
-    if (typeof value === "string" || typeof value === "number") {
-      out.push(String(value));
-      return;
-    }
-    if (Array.isArray(value)) {
-      for (const item of value) visit(item);
-      return;
-    }
-    if (typeof value === "object") {
-      for (const [key, on] of Object.entries(value)) {
-        if (on) out.push(key);
-      }
-    }
-  };
-  for (const input of inputs) visit(input);
-  return out.join(" ");
-}
+const TEXT_WEIGHTS = ["regular", "medium", "semibold", "bold"] as const;
 
-/** Identity at runtime — the type carries the literal shape for indexing. */
-export function sortCx<T extends Record<string, unknown>>(styles: T): T {
-  return styles;
+const TEXT_STYLE_SUFFIXES = TEXT_FAMILIES.flatMap((family) =>
+  TEXT_WEIGHTS.map((weight) => `${family}-${weight}`),
+);
+
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      "font-size": [{ text: TEXT_STYLE_SUFFIXES }],
+    },
+  },
+});
+
+/**
+ * Merge Tailwind classes safely. Last-write-wins on conflicting utilities.
+ */
+export const cx = twMerge;
+
+/**
+ * Identity helper that gives the Tailwind IntelliSense extension a hook for
+ * sorting classes inside style objects (the extension doesn't sort inside
+ * plain object literals otherwise).
+ */
+export function sortCx<
+  T extends Record<
+    string,
+    string | number | Record<string, string | number | Record<string, string | number>>
+  >,
+>(classes: T): T {
+  return classes;
 }
