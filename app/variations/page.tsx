@@ -13,7 +13,7 @@ export default async function VariationsPage() {
           La traque des variations
         </h1>
         <p className="mt-1 max-w-3xl text-[12.5px] leading-relaxed text-dim">
-          Chaque chiffre du run, suivi poll par poll : valeur courante, dernier
+          Chaque chiffre du run, suivi mesure par mesure : valeur courante, dernier
           changement, écart sur une minute, minimum et maximum de la fenêtre,
           avec la précision exacte du producteur. Les échantillons sont
           persistés sur cet appareil — un rechargement ne remet pas la traque à
@@ -37,7 +37,7 @@ export default async function VariationsPage() {
             <p className="mt-0.5 text-faint">
               L&apos;écart au dernier <em>changement réel</em>, pas au dernier
               rendu. La perte n&apos;est écrite que toutes les 10 steps
-              (~26 s) : un Δ nul entre deux polls est normal.
+              (~26 s) : un Δ nul entre deux mesures est normal.
             </p>
           </div>
           <div className="border-l border-line pl-2.5">

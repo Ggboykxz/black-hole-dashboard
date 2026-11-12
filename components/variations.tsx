@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { sparkPath, sparkY } from "./sparkline";
+import Sparkline from "./sparkline";
 import type { Live } from "@/lib/types";
 import { MAX_SAMPLES, type MetricSample } from "@/lib/live-store";
 import { useHydratedClock } from "@/lib/use-mounted";
@@ -122,16 +122,10 @@ function MetricCard({ spec, samples, now, windowMs }: CardProps) {
           ? "#fb7185"
           : spec.color;
 
-  const spark = sparkPath(series.slice(-90).map((p) => p.v));
-  const sparkVals = series.slice(-90);
-  const lastSpark = sparkVals[sparkVals.length - 1];
-  const lastY =
-    lastSpark && sparkVals.length
-      ? sparkY(lastSpark.v, sparkVals.map((p) => p.v))
-      : 14;
+  const sparkValues = series.slice(-90).map((p) => p.v);
 
   return (
-    <div className="relative overflow-hidden rounded-lg border border-line bg-[#0a0d13]/70 p-2.5">
+    <div className="group relative overflow-hidden rounded-lg border border-line/90 bg-gradient-to-b from-white/[0.028] to-transparent p-2.5 transition-colors hover:border-[#2a3343]">
       {/* the metric's own colour, as a hairline: the grid becomes scannable */}
       <span
         className="pointer-events-none absolute inset-x-0 top-0 h-[2px]"
@@ -170,37 +164,11 @@ function MetricCard({ spec, samples, now, windowMs }: CardProps) {
       </div>
 
       {/* the sparkline: the last 90 samples of this window */}
-      <svg
-        viewBox="0 0 100 28"
-        preserveAspectRatio="none"
-        className="mt-1.5 h-7 w-full"
-        aria-hidden
-      >
-        <defs>
-          <linearGradient id={`spark-${spec.key}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={spec.color} stopOpacity="0.28" />
-            <stop offset="100%" stopColor={spec.color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {spark ? (
-          <>
-            <path
-              d={`${spark} L100 28 L0 28 Z`}
-              fill={`url(#spark-${spec.key})`}
-            />
-            <path
-              d={spark}
-              fill="none"
-              stroke={spec.color}
-              strokeWidth="1.4"
-              vectorEffect="non-scaling-stroke"
-            />
-            <circle cx="100" cy={lastY} r="1.8" fill={spec.color} />
-          </>
-        ) : (
-          <line x1="0" y1="14" x2="100" y2="14" stroke="#1e2430" strokeWidth="1" />
-        )}
-      </svg>
+      <Sparkline
+        values={sparkValues}
+        color={spec.color}
+        className="mt-1.5 h-7 w-full opacity-90 transition-opacity group-hover:opacity-100"
+      />
 
       {/* the ruler: min — current — max, at the width of the window */}
       <div className="relative mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#12161e]">
@@ -326,7 +294,7 @@ export default function LiveVariations({
             Traque des variations
           </h2>
           <p className="mt-0.5 max-w-3xl text-[10.5px] leading-relaxed text-dim">
-            Chaque poll écrit un échantillon ; les deltas sont calculés sur les
+            Chaque mesure distincte écrit un échantillon ; les deltas sont calculés sur les
             valeurs mesurées, jamais lissées ni interpolées. Précision = celle
             du producteur (perte à 5 décimales, LR en notation scientifique).
           </p>
@@ -342,7 +310,7 @@ export default function LiveVariations({
               </span>
               <span
                 className="chip !px-2 !py-[2px] !text-[9.5px]"
-                title="intervalle médian entre deux polls"
+                title="intervalle médian entre deux mesures distinctes"
               >
                 Δt ≈ {stats.median.toFixed(1)} s
               </span>
@@ -414,7 +382,7 @@ export default function LiveVariations({
 
       <p className="text-[9.5px] leading-relaxed text-faint">
         La perte n&apos;est écrite que toutes les 10 steps (~26 s) : un Δ nul
-        entre deux polls est normal et signalé « stable ». Un Δ non nul est
+        entre deux mesures est normal et signalé « stable ». Un Δ non nul est
         toujours un vrai changement du log. La fenêtre glisse sur 10 min et
         reste bornée à {MAX_SAMPLES.toLocaleString("fr-FR")} échantillons
         persistés.
@@ -424,7 +392,7 @@ export default function LiveVariations({
         <div className="overflow-hidden rounded-lg border border-line">
           <div className="flex items-center justify-between border-b border-line bg-[#0b0e14]/80 px-3 py-2">
             <span className="text-[10px] uppercase tracking-[0.08em] text-faint">
-              bande de contrôle — {recent.length} derniers polls
+              bande de contrôle — {recent.length} dernières mesures
             </span>
             <span className="font-mono text-[8.5px] text-faint">
               {live?.source ? `source ${live.source}` : "journal local"}

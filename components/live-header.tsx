@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useLiveFeed } from "./live-provider";
 import { LiveClock, SignalAge } from "./live-clock";
+import Sparkline from "./sparkline";
 import type { Change } from "@/lib/changes";
 import type { SampleKey } from "@/lib/metrics";
 import { f4, hours, int, pct, step as fmtStep } from "@/lib/format";
@@ -325,8 +326,21 @@ export function RailStatus() {
           · <SignalAge updatedAt={live?.updated_at} />
         </span>
       </div>
-      <div className="num flex justify-between border-t border-line/70 pt-1.5 text-[9px] text-faint">
+      <div className="num flex items-center justify-between gap-2 border-t border-line/70 pt-1.5 text-[9px] text-faint">
         <span>poll {feed.pollMs / 1000} s</span>
+        {feed.latencyHistory.length > 2 ? (
+          <span className="inline-block h-2.5 w-12 opacity-80">
+            <Sparkline
+              values={feed.latencyHistory}
+              color={meta.color}
+              height={10}
+              width={48}
+              area={false}
+              dot={false}
+              className="h-2.5 w-12"
+            />
+          </span>
+        ) : null}
         <span>{feed.latencyMs === null ? "— ms" : `${feed.latencyMs} ms`}</span>
       </div>
     </div>

@@ -319,7 +319,7 @@ export function describeTarget(id: TargetId, snapshot: Snapshot): string {
     case "processes":
       return "Les processus de la chaîne : trainer, watchdog, keepalive, heartbeat — avec leur PID et leur durée de vie.";
     case "variations":
-      return "La traque des variations : chaque poll écrit un échantillon horodaté. Deltas, min/max et bande de contrôle sont calculés sur ces mesures réelles, avec la précision du producteur.";
+      return "La traque des variations : chaque mesure distincte écrit un échantillon horodaté. Deltas, min/max et bande de contrôle sont calculés sur ces mesures réelles, avec la précision du producteur.";
     case "metrics":
       return "Le registre M1–M14 : définition, producteur unique, artefact, step et classe de comparabilité de chaque mesure.";
     case "predictions":

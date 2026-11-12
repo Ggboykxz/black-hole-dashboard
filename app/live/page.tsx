@@ -27,8 +27,11 @@ export default async function LivePage() {
             La courbe grandit pendant que le trainer écrit. En mode local,
             l&apos;API lit <code className="text-accent">log.jsonl</code> à
             chaque requête ; en mode Vercel, elle suit le heartbeat publié
-            toutes les 30 s. Le panneau de santé au-dessus dit ce qui se
-            passe — et quoi faire si la session s&apos;arrête.
+            toutes les 30 s. Le navigateur interroge{" "}
+            <code className="text-accent">/api/live</code> toutes les 1 s ;
+            entre deux réponses, l&apos;horloge UTC et l&apos;âge du signal
+            sont recalculés localement à ~10 Hz. Le panneau de santé au-dessus
+            dit ce qui se passe — et quoi faire si la session s&apos;arrête.
           </p>
         </div>
       </div>

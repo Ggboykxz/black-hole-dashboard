@@ -202,14 +202,31 @@ export default function HealthPanel({
             <span className="text-[9.5px] uppercase tracking-[0.12em] text-faint">
               matériel
             </span>
-            <span className="num text-[9px] text-faint">
-              {measured.gpu.name}
-              {measured.gpu.clock_mhz
-                ? ` · ${measured.gpu.clock_mhz} / ${measured.gpu.clock_max_mhz ?? "—"} MHz`
-                : ""}
-              {measured.gpu.power_w
-                ? ` · ${measured.gpu.power_w.toFixed(0)} W`
-                : ""}
+            <span className="flex items-center gap-2">
+              {feed.history.length > 2 ? (
+                <span
+                  className="inline-block h-3 w-16 opacity-90"
+                  title={`température GPU sur ${feed.history.length} points d'historique`}
+                >
+                  <Sparkline
+                    values={feed.history.map((h) => h.temp_c)}
+                    color="#f97316"
+                    height={12}
+                    width={64}
+                    dot={false}
+                    className="h-3 w-16"
+                  />
+                </span>
+              ) : null}
+              <span className="num text-[9px] text-faint">
+                {measured.gpu.name}
+                {measured.gpu.clock_mhz
+                  ? ` · ${measured.gpu.clock_mhz} / ${measured.gpu.clock_max_mhz ?? "—"} MHz`
+                  : ""}
+                {measured.gpu.power_w
+                  ? ` · ${measured.gpu.power_w.toFixed(0)} W`
+                  : ""}
+              </span>
             </span>
           </div>
           <div className="grid gap-x-6 gap-y-2 px-4 pb-3 pt-1.5 sm:grid-cols-2">

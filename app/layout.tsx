@@ -87,7 +87,7 @@ export default async function RootLayout({
         <Palette />
         <div className="flex min-h-screen">
           {/* the rail */}
-          <aside className="sticky top-0 hidden h-screen w-[228px] shrink-0 flex-col border-r border-line bg-[#080a0e]/80 px-4 py-5 backdrop-blur md:flex">
+          <aside className="sticky top-0 hidden h-screen w-[228px] shrink-0 flex-col overflow-y-auto border-r border-line bg-[#080a0e]/80 px-4 py-5 backdrop-blur [scrollbar-width:thin] md:flex">
             <Link href="/" className="mb-1 block">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-6 w-6 items-center justify-center">
@@ -102,7 +102,7 @@ export default async function RootLayout({
               </div>
             </Link>
 
-            <div className="mt-5">
+            <div className="mt-4">
               <Nav />
             </div>
 
