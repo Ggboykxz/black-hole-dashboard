@@ -7,6 +7,7 @@ import { Focusable } from "react-aria-components";
 import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { useLiveFeed } from "./live-provider";
 import { SignalAge } from "./live-clock";
+import Sparkline from "./sparkline";
 import { compact, f2, f4, f5, hours, int, pct, step as fmtStep } from "@/lib/format";
 import { useCountUp } from "@/lib/use-count-up";
 
@@ -61,6 +62,21 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
   );
 
   const progress = Math.max(0, Math.min(100, percent ?? 0));
+
+  /* Every sparkline is a real series: the journal's train/val tails, the
+     official benchmark points, the paired reasoning series, the published LR
+     schedule. Throughput is the one figure the producer writes as a single
+     value — its sparkline only exists once the feed has actually sampled it,
+     and nothing is drawn before that. */
+  const trainSpark = feed.rows.map((r) => r.loss).slice(-80);
+  const valSpark = feed.vals.map((r) => r.loss).slice(-80);
+  const benchSpark = bench.map((b) => b.loss);
+  const reasonSpark = snapshot.paired.map((p) => p.reasoning);
+  const lrSpark = snapshot.series.lr.map((p) => p.lr).slice(-80);
+  const tokSpark = feed.samples
+    .map((s) => s.tokens_per_s)
+    .filter((v): v is number => typeof v === "number" && Number.isFinite(v))
+    .slice(-80);
 
   return (
     <div
@@ -200,17 +216,32 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
             value={f4(loss)}
             sub={live?.train_loss !== null && live?.train_loss !== undefined ? "live · tendance seule" : "instantané"}
             tone="accent"
+            spark={
+              trainSpark.length > 2 ? (
+                <Sparkline values={trainSpark} color="#38bdf8" className="h-7 w-full" />
+              ) : undefined
+            }
           />
           <Stat
             label="éval du run"
             value={val !== null ? f4(val) : "—"}
             sub={st.val_last ? `au step ${fmtStep(st.val_last.step)}` : "—"}
+            spark={
+              valSpark.length > 2 ? (
+                <Sparkline values={valSpark} color="#a78bfa" className="h-7 w-full" />
+              ) : undefined
+            }
           />
           <Stat
             label="bench officiel"
             value={last ? f5(last.loss) : "—"}
             sub={last ? `ppl ${f2(last.ppl)} · @ ${fmtStep(last.step)}` : "—"}
             tone="accent"
+            spark={
+              benchSpark.length > 2 ? (
+                <Sparkline values={benchSpark} color="#38bdf8" className="h-7 w-full" />
+              ) : undefined
+            }
           />
           <Stat
             label="raisonnement (M5)"
@@ -221,12 +252,31 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
             }
             sub="in-domain, pas un transfert"
             tone="warn"
+            spark={
+              reasonSpark.length > 2 ? (
+                <Sparkline values={reasonSpark} color="#fbbf24" className="h-7 w-full" />
+              ) : undefined
+            }
           />
-          <Stat label="LR" value={(lr ?? 0).toExponential(3)} sub="cosine → 1e-5" />
+          <Stat
+            label="LR"
+            value={(lr ?? 0).toExponential(3)}
+            sub="cosine → 1e-5"
+            spark={
+              lrSpark.length > 2 ? (
+                <Sparkline values={lrSpark} color="#94a3b8" className="h-7 w-full" />
+              ) : undefined
+            }
+          />
           <Stat
             label="cadence"
             value={f2(pace)}
             sub={`s/step · ${int(tok)} tok/s`}
+            spark={
+              tokSpark.length > 2 ? (
+                <Sparkline values={tokSpark} color="#34d399" className="h-7 w-full" />
+              ) : undefined
+            }
           />
         </div>
       </div>

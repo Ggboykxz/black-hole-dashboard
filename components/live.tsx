@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Chart from "./chart";
+import Sparkline from "./sparkline";
 import Avatar from "./avatar";
 import LiveVariations from "./variations";
 import { useLiveFeed } from "./live-provider";
@@ -28,15 +29,17 @@ function Tile({
   unit,
   sub,
   color,
+  spark,
 }: {
   label: string;
   value: string;
   unit?: string;
   sub?: string;
   color: string;
+  spark?: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.055] bg-white/[0.022] px-3 py-2">
+    <div className="group rounded-xl border border-white/[0.055] bg-white/[0.022] px-3 py-2">
       <div className="flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.09em] text-faint">
         <span className="h-1 w-1 rounded-full" style={{ background: color }} />
         {label}
@@ -48,6 +51,11 @@ function Tile({
         ) : null}
       </div>
       {sub ? <div className="num mt-0.5 text-[9.5px] text-faint">{sub}</div> : null}
+      {spark ? (
+        <div className="mt-1.5 opacity-80 transition-opacity group-hover:opacity-100">
+          {spark}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -173,6 +181,17 @@ export default function LivePanel({
 
   const changes = feed.changes;
 
+  /** a real series from the journal, at producer precision — never padded */
+  const sampleSeries = (key: "lr" | "grad_norm" | "tokens_per_s") =>
+    feed.samples
+      .map((s) => s[key])
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v))
+      .slice(-60);
+  const trainSpark = feed.rows.map((r) => r.loss).slice(-60);
+  const lrSpark = sampleSeries("lr");
+  const gradSpark = sampleSeries("grad_norm");
+  const tokSpark = sampleSeries("tokens_per_s");
+
   /** the measured activity of the run: values actually changed in the last minute */
   const activityPerMin = useMemo(() => {
     const now = Date.now();
@@ -234,10 +253,23 @@ export default function LivePanel({
               </span>
               <span
                 className="chip !px-2 !text-[9.5px]"
-                title="cadence du réseau et dernier aller-retour mesuré"
+                title="cadence du réseau, dernier aller-retour mesuré, et sa forme sur les 2 dernières minutes"
               >
                 poll {feed.pollMs / 1000} s ·{" "}
                 {feed.latencyMs === null ? "— ms" : `${feed.latencyMs} ms`}
+                {feed.latencyHistory.length > 2 ? (
+                  <span className="ml-1 inline-block h-2.5 w-10 align-middle">
+                    <Sparkline
+                      values={feed.latencyHistory}
+                      color={meta.color}
+                      height={10}
+                      width={40}
+                      area={false}
+                      dot={false}
+                      className="h-2.5 w-10"
+                    />
+                  </span>
+                ) : null}
               </span>
               {feed.restored ? (
                 <span className="chip" title="points restaurés depuis localStorage">
@@ -347,20 +379,45 @@ export default function LivePanel({
                   ? "depuis l'ouverture : —"
                   : `depuis l'ouverture : ${lossDelta >= 0 ? "+" : "−"}${f4(Math.abs(lossDelta))}`
               }
+              spark={
+                trainSpark.length > 2 ? (
+                  <Sparkline values={trainSpark} color="#38bdf8" className="h-6 w-full" />
+                ) : undefined
+              }
             />
             <Tile
               label="learning rate"
               value={live?.lr ? live.lr.toExponential(3) : "—"}
               color="#94a3b8"
               sub="cosine, pas encore de gel"
+              spark={
+                lrSpark.length > 2 ? (
+                  <Sparkline values={lrSpark} color="#94a3b8" className="h-6 w-full" />
+                ) : undefined
+              }
             />
-            <Tile label="grad norm" value={f2(live?.grad_norm)} color="#fbbf24" sub="clippé à 1.0" />
+            <Tile
+              label="grad norm"
+              value={f2(live?.grad_norm)}
+              color="#fbbf24"
+              sub="clippé à 1.0"
+              spark={
+                gradSpark.length > 2 ? (
+                  <Sparkline values={gradSpark} color="#fbbf24" className="h-6 w-full" />
+                ) : undefined
+              }
+            />
             <Tile
               label="débit"
               value={int(live?.tokens_per_s)}
               unit="tok/s"
               color="#34d399"
               sub={`${int(live?.tokens_per_s ? live.tokens_per_s * 60 : null)} tok/min`}
+              spark={
+                tokSpark.length > 2 ? (
+                  <Sparkline values={tokSpark} color="#34d399" className="h-6 w-full" />
+                ) : undefined
+              }
             />
           </div>
 

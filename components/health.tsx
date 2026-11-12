@@ -6,6 +6,7 @@ import { buildHealth, type Health } from "@/lib/health";
 import { Meter } from "@/components/base/meter/meter";
 import { useLiveFeed } from "./live-provider";
 import { SignalAge } from "./live-clock";
+import Sparkline from "./sparkline";
 import { preciseAge, shortUTC } from "@/lib/signal";
 
 const TONE: Record<string, { bg: string; text: string; border: string }> = {
@@ -148,11 +149,29 @@ export default function HealthPanel({
         <span>
           poll <span className="text-dim">{feed.pollMs / 1000} s</span>
         </span>
-        <span>
+        <span className="flex items-center gap-1.5">
           aller-retour{" "}
           <span className="text-dim">
             {feed.latencyMs === null ? "—" : `${feed.latencyMs} ms`}
           </span>
+          {feed.latencyHistory.length > 2 ? (
+            <span
+              className="inline-block h-3 w-16"
+              title={`${feed.latencyHistory.length} derniers polls · min ${Math.min(
+                ...feed.latencyHistory,
+              )} ms · max ${Math.max(...feed.latencyHistory)} ms`}
+            >
+              <Sparkline
+                values={feed.latencyHistory}
+                color={feed.meta.color}
+                height={12}
+                width={64}
+                area={false}
+                dot={false}
+                className="h-3 w-16"
+              />
+            </span>
+          ) : null}
         </span>
         <span>
           réponses <span className="text-dim">{feed.pollCount}</span>

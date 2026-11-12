@@ -61,6 +61,8 @@ import {
 
 /** how many change lines are kept in memory */
 const MAX_CHANGES = 400;
+/** how many round-trips the latency sparkline keeps (~2 min at 1 s) */
+const MAX_LATENCY = 120;
 
 /**
  * The signature of a measurement.
@@ -94,6 +96,8 @@ export interface LiveFeed {
   fresh: number;
   /** last measured round-trip of `/api/live`, in ms (null before the first success) */
   latencyMs: number | null;
+  /** the last ~2 min of round-trips, oldest first — the network's own shape */
+  latencyHistory: number[];
   /** local clock of the last completed poll */
   lastPollAt: number | null;
   /** how many polls have completed since the page opened */
@@ -163,6 +167,7 @@ export function LiveProvider({
   const [changes, setChanges] = useState<Change[]>([]);
   const [age, setAge] = useState<number | null>(null);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [latencyHistory, setLatencyHistory] = useState<number[]>([]);
   const [lastPollAt, setLastPollAt] = useState<number | null>(null);
   const [pollCount, setPollCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -239,7 +244,9 @@ export function LiveProvider({
         setError(null);
         /* the round-trip is measured, not guessed: fetch + JSON decode, the
            same cost the browser paid to get this payload on screen */
-        setLatencyMs(Math.max(1, Math.round(performance.now() - started)));
+        const ms = Math.max(1, Math.round(performance.now() - started));
+        setLatencyMs(ms);
+        setLatencyHistory((h) => [...h.slice(-(MAX_LATENCY - 1)), ms]);
 
         const hist = (data.gpu_history ?? []) as {
           t: string;
@@ -352,6 +359,8 @@ export function LiveProvider({
     setChangeCount(0);
     setRestored(false);
     setCachePoints(0);
+    setLatencyHistory([]);
+    setLatencyMs(null);
   }, []);
 
   const source: SignalSource = useMemo(() => {
@@ -401,6 +410,7 @@ export function LiveProvider({
       age,
       fresh: freshness(age),
       latencyMs,
+      latencyHistory,
       lastPollAt,
       pollCount,
       pollMs: POLL_MS,
@@ -427,6 +437,7 @@ export function LiveProvider({
       state,
       age,
       latencyMs,
+      latencyHistory,
       lastPollAt,
       pollCount,
       error,

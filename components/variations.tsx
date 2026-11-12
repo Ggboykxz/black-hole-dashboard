@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { sparkPath, sparkY } from "./sparkline";
 import type { Live } from "@/lib/types";
 import { MAX_SAMPLES, type MetricSample } from "@/lib/live-store";
 import { useHydratedClock } from "@/lib/use-mounted";
@@ -25,20 +26,6 @@ function humanAge(s: number | null): string {
   if (m < 60) return `${m} min ${String(Math.round(s % 60)).padStart(2, "0")}`;
   const h = Math.floor(m / 60);
   return `${h} h ${String(m % 60).padStart(2, "0")}`;
-}
-
-function sparkPath(values: number[], w = 100, h = 28): string {
-  if (!values.length) return "";
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
-  return values
-    .map((v, i) => {
-      const x = values.length === 1 ? w : (i / (values.length - 1)) * w;
-      const y = h - 2 - ((v - min) / span) * (h - 4);
-      return `${i === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(" ");
 }
 
 interface CardProps {
@@ -138,11 +125,9 @@ function MetricCard({ spec, samples, now, windowMs }: CardProps) {
   const spark = sparkPath(series.slice(-90).map((p) => p.v));
   const sparkVals = series.slice(-90);
   const lastSpark = sparkVals[sparkVals.length - 1];
-  const sparkMin = sparkVals.length ? Math.min(...sparkVals.map((p) => p.v)) : 0;
-  const sparkMax = sparkVals.length ? Math.max(...sparkVals.map((p) => p.v)) : 0;
   const lastY =
     lastSpark && sparkVals.length
-      ? 26 - ((lastSpark.v - sparkMin) / (sparkMax - sparkMin || 1)) * 24
+      ? sparkY(lastSpark.v, sparkVals.map((p) => p.v))
       : 14;
 
   return (

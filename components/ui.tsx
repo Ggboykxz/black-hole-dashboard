@@ -80,7 +80,7 @@ export function Stat({
             ? "#38bdf8"
             : null;
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-line/90 bg-gradient-to-br from-white/[0.035] to-white/[0.012] px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2a3343] hover:from-white/[0.05] hover:to-white/[0.02]">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line/90 bg-gradient-to-br from-white/[0.035] to-white/[0.012] px-3.5 pb-2.5 pt-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2a3343] hover:from-white/[0.05] hover:to-white/[0.02]">
       {dot ? (
         <span
           className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-40 transition-opacity duration-300 group-hover:opacity-100"
@@ -102,8 +102,11 @@ export function Stat({
         {value}
       </div>
       {sub ? <div className="mt-1 text-[10.5px] leading-snug text-dim">{sub}</div> : null}
+      {/* the sparkline is a reading, not a backdrop: it sits under the value,
+          full width, and only takes the space it needs. An empty series is
+          not drawn at all — the number above is already the truth. */}
       {spark ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 opacity-70 transition-opacity group-hover:opacity-100">
+        <div className="pointer-events-none mt-auto pt-2 opacity-80 transition-opacity group-hover:opacity-100">
           {spark}
         </div>
       ) : null}
