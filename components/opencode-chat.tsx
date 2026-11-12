@@ -9,15 +9,26 @@ import type {
 } from "@/lib/opencode-types";
 
 /**
- * The OpenCode chat — live, and pilotable.
+ * The OpenCode chat — live, pilotable, and it **follows the developer**.
  *
- * OpenCode runs as a client/server: the TUI talks to a background service
- * that owns the sessions, the tools and the permissions. This panel is a
- * *second* client of that service — it shows the conversations as they are
- * written and lets the operator drive them (send a message, interrupt,
- * switch model or agent, answer a permission request).
+ * OpenCode runs as a client/server: the TUI, the SDK and the HTTP API all
+ * talk to a background service that owns the sessions, the tools and the
+ * permissions. This panel is a *second* client of that service — it shows
+ * the conversations as they are written and lets the operator drive them
+ * (send a message, interrupt, switch model or agent, answer a permission
+ * request).
  *
- * Three rules it obeys:
+ * **The auto-follow.** The developer works only with OpenCode, in several
+ * environments, and the sessions are not the same from one day to the
+ * next. The dashboard must therefore not be attached to a session id: the
+ * service marks the sessions it is *running* (`GET /api/session/active`),
+ * and the panel follows the running one — as soon as a session is resumed
+ * elsewhere, the dashboard is already there. The environments differ; the
+ * session carries its own directory, and the panel shows it. A session can
+ * still be **pinned** (the operator wants to watch a specific one), and the
+ * "suivi auto" button gives the hand back to the machine.
+ *
+ * Three more rules it obeys:
  *
  * 1. **It is locked by default.** The server refuses every call unless
  *    `OPENCODE_KEY` is configured *and* the browser presents that key. The
@@ -43,16 +54,18 @@ function relTime(ms?: number): string {
   return `il y a ${Math.round(d / 86_400_000)} j`;
 }
 
-function int(x?: number | null): string {
-  if (x === null || x === undefined) return "—";
-  return Math.round(x).toLocaleString("fr-FR");
-}
-
 function compactTokens(x?: number | null): string {
   if (x === null || x === undefined) return "—";
   if (x >= 1_000_000) return `${(x / 1_000_000).toFixed(1)} M`;
   if (x >= 1_000) return `${(x / 1_000).toFixed(1)} k`;
   return String(Math.round(x));
+}
+
+/** the tail of a path — the environment a session lives in */
+function shortDir(dir?: string | null): string {
+  if (!dir) return "";
+  const parts = dir.split("/").filter(Boolean);
+  return parts.length ? `…/${parts.slice(-2).join("/")}` : dir;
 }
 
 /** what a tool was asked to do — one line, truncated */
@@ -133,7 +146,7 @@ function Message({
     return (
       <div className="flex items-center gap-2 text-[10px] text-faint">
         <span className="h-px flex-1 bg-line/70" />
-        <span>
+        <span className="text-center">
           {message.outcome ?? "inactif"}
           {message.error?.message ? ` — ${message.error.message}` : ""}
         </span>
@@ -201,9 +214,7 @@ function Message({
             ))}
           </div>
         ) : (
-          <div className="mt-1 text-[10px] text-faint">
-            raisonnement masqué
-          </div>
+          <div className="mt-1 text-[10px] text-faint">raisonnement masqué</div>
         )
       ) : null}
 
@@ -299,6 +310,8 @@ export default function OpenCodeChat() {
   const [locked, setLocked] = useState(false);
   const [disabled, setDisabled] = useState(false);
   const [sessionID, setSessionID] = useState<string | null>(null);
+  const [pinned, setPinned] = useState<string | null>(null);
+  const [location, setLocation] = useState<string | null>(null);
   const [messages, setMessages] = useState<OcMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [filter, setFilter] = useState("");
@@ -349,23 +362,53 @@ export default function OpenCodeChat() {
     [key],
   );
 
+  /* ── the sessions, newest first ────────────────────────────────────── */
+  /* The environments differ: a session carries its own directory, and the
+     list shows it — the operator must know where a session lives before
+     he sends it a message. */
+  const sessions = useMemo(() => {
+    const all = (status?.sessions ?? []).slice().sort(
+      (a, b) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0),
+    );
+    const f = filter.trim().toLowerCase();
+    return f
+      ? all.filter((s) => (s.title ?? "").toLowerCase().includes(f))
+      : all;
+  }, [filter, status?.sessions]);
+
+  const current = useMemo(
+    () => sessions.find((s) => s.id === sessionID) ?? null,
+    [sessionID, sessions],
+  );
+
+  /* the environment of the followed session — the server is asked for the
+     agents, les modèles et les permissions *de ce répertoire* */
+  useEffect(() => {
+    const loc = current?.location ?? null;
+    if (loc && loc !== location) setLocation(loc);
+  }, [current?.location, location]);
+
   /* ── the state of the service ───────────────────────────────────────── */
   const refresh = useCallback(async () => {
     if (!key) return;
     try {
-      const body = (await call("/api/opencode")) as OcStatus;
+      /* the server is told which session is followed and where it lives:
+         the environments differ, and the per-location calls (agents,
+         modèles, permissions) must be asked for *that* directory */
+      const q = new URLSearchParams();
+      if (sessionID) q.set("session", sessionID);
+      if (location) q.set("location", location);
+      const body = (await call(
+        `/api/opencode${q.toString() ? `?${q}` : ""}`,
+      )) as OcStatus;
       setStatus(body);
       setLocked(false);
       setDisabled(false);
       setPolls((n) => n + 1);
-      setSessionID((current) => {
-        if (current && body.sessions?.some((s) => s.id === current)) return current;
-        return body.sessions?.[0]?.id ?? null;
-      });
     } catch (e) {
-      const status = (e as Error & { status?: number }).status;
-      if (status === 401) setLocked(true);
-      else if (status === 503) setDisabled(true);
+      const code = (e as Error & { status?: number }).status;
+      if (code === 401) setLocked(true);
+      else if (code === 503) setDisabled(true);
       else {
         setStatus((s) => ({
           ...(s ?? { enabled: true, authorized: true }),
@@ -373,7 +416,7 @@ export default function OpenCodeChat() {
         }));
       }
     }
-  }, [call, key]);
+  }, [call, key, sessionID, location]);
 
   useEffect(() => {
     if (!key) return;
@@ -388,6 +431,35 @@ export default function OpenCodeChat() {
     }, 3000);
     return () => window.clearInterval(t);
   }, [authorized, refresh]);
+
+  /* ── the auto-follow ─────────────────────────────────────────────────── */
+  /* The session to follow: the one the service is *running* right now; if
+     none is running, the one that was touched last. */
+  const autoTarget = useMemo(() => {
+    const all = status?.sessions ?? [];
+    const running = all.filter((s) => s.running);
+    const pool = running.length ? running : all;
+    return (
+      pool
+        .slice()
+        .sort((a, b) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0))[0]?.id ??
+      null
+    );
+  }, [status?.sessions]);
+
+  /* When the developer resumes a session elsewhere, the dashboard is
+     already there. When the operator pinned a session, that one wins —
+     until the hand is given back to the machine. */
+  useEffect(() => {
+    if (!authorized) return;
+    const wanted = pinned ?? autoTarget;
+    if (!wanted || wanted === sessionID) return;
+    const title =
+      (status?.sessions ?? []).find((s) => s.id === wanted)?.title ?? wanted;
+    setSessionID(wanted);
+    setMessages([]);
+    if (!pinned) setNotice(`le poste suit « ${title} »`);
+  }, [autoTarget, authorized, pinned, sessionID, status?.sessions]);
 
   /* the thread every second — the dashboard's cadence */
   useEffect(() => {
@@ -420,15 +492,23 @@ export default function OpenCodeChat() {
 
   /* ── the pilot's actions ────────────────────────────────────────────── */
   const act = useCallback(
-    async (body: Record<string, unknown>, ok?: string) => {
+    async (
+      body: Record<string, unknown>,
+      ok?: string,
+    ): Promise<Record<string, unknown> | null> => {
       setSending(true);
       setNotice(null);
       try {
-        await call("/api/opencode", { method: "POST", body: JSON.stringify(body) });
+        const res = (await call("/api/opencode", {
+          method: "POST",
+          body: JSON.stringify(body),
+        })) as Record<string, unknown> | null;
         if (ok) setNotice(ok);
         await refresh();
+        return res;
       } catch (e) {
         setNotice(e instanceof Error ? e.message : String(e));
+        return null;
       } finally {
         setSending(false);
       }
@@ -443,25 +523,14 @@ export default function OpenCodeChat() {
     await act({ action: "prompt", sessionID, text }, "message envoyé");
   }, [act, draft, sessionID]);
 
-  const openKey = useCallback(
-    (value: string) => {
-      const v = value.trim();
-      if (!v) return;
-      window.localStorage.setItem(KEY_STORAGE, v);
-      setKey(v);
-      setKeyInput(v);
-      setLocked(false);
-    },
-    [],
-  );
-
-  const sessions = useMemo(() => {
-    const all = status?.sessions ?? [];
-    const f = filter.trim().toLowerCase();
-    return f
-      ? all.filter((s) => (s.title ?? "").toLowerCase().includes(f))
-      : all;
-  }, [filter, status?.sessions]);
+  const openKey = useCallback((value: string) => {
+    const v = value.trim();
+    if (!v) return;
+    window.localStorage.setItem(KEY_STORAGE, v);
+    setKey(v);
+    setKeyInput(v);
+    setLocked(false);
+  }, []);
 
   const permissions = useMemo(
     () =>
@@ -469,11 +538,6 @@ export default function OpenCodeChat() {
         (p) => !sessionID || p.sessionID === sessionID,
       ),
     [sessionID, status?.permissions],
-  );
-
-  const current = useMemo(
-    () => sessions.find((s) => s.id === sessionID) ?? null,
-    [sessionID, sessions],
   );
 
   const busy = useMemo(() => {
@@ -543,11 +607,6 @@ export default function OpenCodeChat() {
             </span>
             {status?.service?.pid ? (
               <span className="chip !px-2 !text-[9.5px]">pid {status.service.pid}</span>
-            ) : null}
-            {status?.directory ? (
-              <span className="chip !px-2 !text-[9.5px]" title="répertoire de travail">
-                {status.directory}
-              </span>
             ) : null}
             <span className="num text-[9.5px] text-faint">
               {sessions.length} session{sessions.length > 1 ? "s" : ""} ·{" "}
@@ -619,7 +678,7 @@ export default function OpenCodeChat() {
           </div>
           <p className="mt-2 font-mono text-[9.5px] text-faint">
             pour ouvrir le poste : OPENCODE_KEY=… dans l&apos;environnement du
-            dashboard, puis <span className="text-dim">opencode service status</span>{" "}
+            dashboard, et <span className="text-dim">opencode service status</span>{" "}
             doit answered le service local
           </p>
         </div>
@@ -636,20 +695,31 @@ export default function OpenCodeChat() {
               </span>
               <button
                 onClick={() =>
-                  void act(
-                    {
-                      action: "session.create",
-                      title: "Session du dashboard",
-                      /* a new session starts on the model of the session
-                         being watched — the one that is known to answer */
-                      model: current?.model ?? undefined,
-                    },
-                    "session créée",
-                  )
+                  void (async () => {
+                    const res = await act(
+                      {
+                        action: "session.create",
+                        title: "Session du dashboard",
+                        /* a new session starts on the model of the session
+                           being watched — the one that is known to answer —
+                           and in *its* directory: the environments differ */
+                        model: current?.model ?? undefined,
+                        directory: current?.location ?? undefined,
+                      },
+                      "session créée",
+                    );
+                    const created = (
+                      res as { session?: { id?: string; title?: string } } | null
+                    )?.session;
+                    if (created?.id) {
+                      setPinned(created.id);
+                      setSessionID(created.id);
+                    }
+                  })()
                 }
                 disabled={sending}
                 className="chip !px-2 !py-[3px] !text-[9.5px] hover:!border-accent/45 hover:!text-accent disabled:opacity-40"
-                title="créer une session dans le répertoire de travail"
+                title="créer une session dans le répertoire de la session suivie"
               >
                 + nouvelle
               </button>
@@ -667,21 +737,36 @@ export default function OpenCodeChat() {
                 return (
                   <li key={s.id}>
                     <button
-                      onClick={() => setSessionID(s.id)}
+                      onClick={() => {
+                        setPinned(s.id);
+                        setSessionID(s.id);
+                        setNotice(`session épinglée : ${s.title ?? s.id}`);
+                      }}
                       className={`w-full rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
                         active
                           ? "border-accent/40 bg-accent/10"
                           : "border-transparent hover:border-line hover:bg-white/[0.03]"
                       }`}
                     >
-                      <span className="block truncate text-[11.5px] text-ink">
-                        {s.title ?? s.id}
+                      <span className="flex items-center gap-1.5">
+                        {s.running ? (
+                          <span
+                            className="pulse shrink-0"
+                            style={{ background: "#34d399" }}
+                            title="session en cours dans le service"
+                          />
+                        ) : null}
+                        <span className="truncate text-[11.5px] text-ink">
+                          {s.title ?? s.id}
+                        </span>
                       </span>
                       <span className="num mt-0.5 flex flex-wrap items-center gap-x-2 text-[9px] text-faint">
                         <span>{relTime(s.time?.updated)}</span>
                         <span>{s.agent ?? "—"}</span>
                         <span>{compactTokens(s.tokens?.input)} in</span>
-                        {s.outcome ? <span>{s.outcome}</span> : null}
+                        {s.location ? (
+                          <span title={s.location}>{shortDir(s.location)}</span>
+                        ) : null}
                       </span>
                     </button>
                   </li>
@@ -689,7 +774,7 @@ export default function OpenCodeChat() {
               })}
               {!sessions.length ? (
                 <li className="px-1 py-2 text-[10.5px] text-faint">
-                  aucune session{locksFilter(filter) ? " pour ce filtre" : ""}
+                  aucune session{filter.trim() ? " pour ce filtre" : ""}
                 </li>
               ) : null}
             </ul>
@@ -699,8 +784,15 @@ export default function OpenCodeChat() {
           <div className="card flex max-h-[70vh] min-h-[520px] flex-col p-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/70 pb-2">
               <div className="min-w-0">
-                <div className="truncate text-[12.5px] font-medium text-ink">
-                  {current?.title ?? "aucune session sélectionnée"}
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-[12.5px] font-medium text-ink">
+                    {current?.title ?? "aucune session sélectionnée"}
+                  </span>
+                  {current?.running ? (
+                    <span className="chip !border-good/45 !px-2 !py-[2px] !text-[9px] !text-good">
+                      en cours
+                    </span>
+                  ) : null}
                 </div>
                 <div className="num truncate text-[9.5px] text-faint">
                   {sessionID ?? "—"}
@@ -711,6 +803,25 @@ export default function OpenCodeChat() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
+                {pinned ? (
+                  <button
+                    onClick={() => {
+                      setPinned(null);
+                      setNotice("suivi auto — le poste suit la session en cours");
+                    }}
+                    className="rounded-full border border-accent/45 bg-accent/[0.08] px-2.5 py-[3px] text-[9.5px] text-accent transition-colors hover:bg-accent/15"
+                    title="lâcher la session épinglée et suivre celle que le service fait tourner"
+                  >
+                    ⟳ suivi auto
+                  </button>
+                ) : (
+                  <span
+                    className="rounded-full border border-good/40 bg-good/[0.06] px-2.5 py-[3px] text-[9.5px] text-good"
+                    title="le poste suit la session que le service fait tourner"
+                  >
+                    suivi auto
+                  </span>
+                )}
                 {current?.agent ? (
                   <select
                     value={current.agent}
@@ -822,7 +933,7 @@ export default function OpenCodeChat() {
                 <p className="text-[11px] text-faint">
                   {sessionID
                     ? "aucun message dans cette session — envoyez le premier."
-                    : "choisissez une session à gauche."}
+                    : "aucune session suivie pour l'instant — le poste attend que le service en fasse tourner une."}
                 </p>
               ) : null}
               <div ref={bottom} />
@@ -869,7 +980,7 @@ export default function OpenCodeChat() {
                   placeholder={
                     sessionID
                       ? "écrire à l'agent… (Entrée pour envoyer, Maj+Entrée pour un saut de ligne)"
-                      : "aucune session sélectionnée"
+                      : "aucune session suivie"
                   }
                   disabled={!sessionID}
                   className="min-h-[64px] flex-1 resize-y rounded-xl border border-line bg-[#0a0d13] px-3 py-2 text-[12px] leading-relaxed text-ink outline-none placeholder:text-faint focus:border-accent/45 disabled:opacity-50"
@@ -888,8 +999,4 @@ export default function OpenCodeChat() {
       ) : null}
     </div>
   );
-}
-
-function locksFilter(filter: string): boolean {
-  return filter.trim().length > 0;
 }

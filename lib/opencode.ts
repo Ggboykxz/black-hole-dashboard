@@ -242,6 +242,22 @@ export async function ocPermissions(
   return res?.data ?? [];
 }
 
+/**
+ * The permissions asked by *one* session.
+ *
+ * Permissions belong to a session (and to its environment): asking the
+ * session directly is the only way to be sure the dashboard sees the
+ * requests of the session it follows, whatever the directory it lives in.
+ */
+export async function ocSessionPermissions(
+  sessionID: string,
+): Promise<OcPermission[]> {
+  const res = await ocJson<{ data: OcPermission[] }>(
+    `/api/session/${encodeURIComponent(sessionID)}/permission`,
+  );
+  return res?.data ?? [];
+}
+
 export async function ocAgents(directory?: string): Promise<OcAgent[]> {
   const q = new URLSearchParams();
   if (directory) q.set("directory", directory);

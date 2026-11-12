@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { OcPermission } from "@/lib/opencode-types";
 import {
   OC_KEY_HEADER,
   OpenCodeUnavailable,
@@ -15,6 +16,7 @@ import {
   ocPrompt,
   ocReplyPermission,
   ocRunCommand,
+  ocSessionPermissions,
   ocSessions,
   ocSetAgent,
   ocSetModel,
@@ -62,34 +64,48 @@ export async function GET(req: NextRequest) {
   }
   if (!keyMatches(req.headers.get(OC_KEY_HEADER))) return unauthorized();
 
-  const directory = workDir();
+  /* The environments differ: the session the dashboard follows may live in
+     another directory than the default one. The caller says which session
+     it follows and where it lives — the per-location calls (agents,
+     modèles, commandes, permissions) are asked for *that* location. */
+  const followed = req.nextUrl.searchParams.get("session") ?? "";
+  const location = req.nextUrl.searchParams.get("location") || workDir();
 
   try {
-    const [info, sessions, agents, models, commands, permissions, active] =
+    const [info, sessions, agents, models, commands, permissions, active, own] =
       await Promise.all([
         ocInfo(),
         ocSessions(),
-        ocAgents(directory),
-        ocModels(directory),
-        ocCommands(directory),
-        ocPermissions(directory),
+        ocAgents(location),
+        ocModels(location),
+        ocCommands(location),
+        ocPermissions(location),
         ocActiveSessions(),
+        followed
+          ? ocSessionPermissions(followed).catch(() => [] as OcPermission[])
+          : Promise.resolve([] as OcPermission[]),
       ]);
 
     /* The session the service considers *running* right now: this is how
        the dashboard knows the developer has just resumed a session, in
        whatever environment it lives. Everything else is a fallback. */
-    const byUpdated = (a: (typeof sessions)[number], b: (typeof sessions)[number]) =>
-      (b.time?.updated ?? 0) - (a.time?.updated ?? 0);
-    const running = sessions
-      .filter((s) => active[s.id])
-      .sort(byUpdated);
+    const byUpdated = (
+      a: (typeof sessions)[number],
+      b: (typeof sessions)[number],
+    ) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0);
+    const running = sessions.filter((s) => active[s.id]).sort(byUpdated);
     const activeSessionID = running[0]?.id ?? null;
+
+    /* the permissions of the followed session come first; the global list
+       may still hold requests from another environment */
+    const allPermissions = [...own, ...permissions].filter(
+      (p, i, arr) => arr.findIndex((q) => q.id === p.id) === i,
+    );
 
     return NextResponse.json({
       enabled: true,
       authorized: true,
-      directory,
+      directory: location,
       service: { ...info, url: info.urls?.[0] ?? null },
       active,
       activeSessionID,
@@ -125,7 +141,7 @@ export async function GET(req: NextRequest) {
         name: c.name,
         description: c.description ?? null,
       })),
-      permissions: permissions.map((p) => ({
+      permissions: allPermissions.map((p) => ({
         id: p.id,
         sessionID: p.sessionID,
         action: p.action,

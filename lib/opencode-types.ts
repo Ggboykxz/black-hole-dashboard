@@ -93,6 +93,23 @@ export interface OcServiceInfo {
   url?: string | null;
 }
 
+/** the session as the dashboard's status route re-shapes it */
+export interface OcSessionView {
+  id: string;
+  title: string;
+  agent: string | null;
+  model: OcModelRef | null;
+  tokens: { input?: number; output?: number; reasoning?: number } | null;
+  cost: number | null;
+  time: { created?: number; updated?: number; busy?: number; idle?: number } | null;
+  /** the environment the session lives in */
+  location: string | null;
+  outcome: string | null;
+  /** the service marks the sessions it considers running right now */
+  running: boolean;
+  runningType: string | null;
+}
+
 /** what `GET /api/opencode` answers */
 export interface OcStatus {
   enabled: boolean;
@@ -103,7 +120,7 @@ export interface OcStatus {
   active?: Record<string, { type: string }>;
   /** the session the dashboard follows when it is in auto mode */
   activeSessionID?: string | null;
-  sessions?: OcSession[];
+  sessions?: OcSessionView[];
   agents?: OcAgent[];
   models?: OcModel[];
   commands?: OcCommand[];

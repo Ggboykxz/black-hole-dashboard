@@ -103,6 +103,23 @@ OPENCODE_PASSWORD=…       # optionnel : sinon ~/.config/opencode/service.json
 Sur un déploiement public (Vercel), le poste n'existe pas : il n'y a pas de
 service OpenCode derrière, et `OPENCODE_KEY` n'y est pas défini.
 
+### Le suivi automatique
+
+Le poste n'est **pas attaché à un id de session** : les sessions changent,
+les environnements diffèrent. Le service marque celles qu'il fait tourner
+(`GET /api/session/active`) — le poste suit donc **la session en cours** et
+la rejoint dès qu'elle reprend, quel que soit son répertoire. Sans session
+en cours, il suit la dernière session touchée.
+
+Une session peut être **épinglée** (on veut watching celle-là) ; le bouton
+« ⟳ suivi auto » rend la main à la machine. Les requêtes au service
+portent la session suivie **et son répertoire** : les agents, les modèles,
+les commandes et les permissions demandés sont ceux de cet environnement.
+
+Le fil est relu **toutes les secondes** — la cadence du dashboard — plutôt
+que par un flux permanent : une connexion coupée est un poll perdu, pas une
+page cassée.
+
 ## Lancer en local
 
 ```bash
