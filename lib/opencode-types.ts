@@ -114,6 +114,8 @@ export interface OcSessionView {
 export interface OcStatus {
   enabled: boolean;
   authorized: boolean;
+  /** `local` = the request comes from the box, `key` = a key was presented */
+  mode?: "key" | "local";
   directory?: string;
   service?: OcServiceInfo;
   /** sessionID → {type} for the sessions the service runs right now */

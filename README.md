@@ -79,13 +79,14 @@ interrompre, changer de modèle ou d'agent, répondre à une demande de
 permission).
 
 C'est la seule partie du dashboard qui **agit** au lieu de lire — donc la
-seule qui soit verrouillée :
+seule qui soit verrouillée. Mais « verrouillé » ne veut pas dire
+« inutilisable par la personne qui possède la machine » :
 
 | condition | ce qui se passe |
 |---|---|
-| `OPENCODE_KEY` absent de l'environnement | le poste est **désactivé** : l'API répond `503`, la page explique pourquoi |
-| `OPENCODE_KEY` défini, clé absente ou fausse | `401` — le poste reste verrouillé |
-| clé correcte | le poste s'ouvre ; la clé reste dans le `localStorage` du navigateur |
+| `OPENCODE_KEY` absent, requête **depuis la machine** | le poste est **ouvert** : on écrit à l'agent depuis le site, sans ceremony (le proxy Colab se connecte localement, donc c'est bien le cas du notebook) |
+| `OPENCODE_KEY` absent, requête **depuis le réseau** | `503` — « le poste n'est ouvert que depuis la machine » |
+| `OPENCODE_KEY` défini | la clé est exigée : `401` si elle est absente ou fausse. La clé reste dans le `localStorage` du navigateur |
 
 Le mot de passe du service OpenCode, lui, **ne quitte jamais le serveur** :
 il est lu à l'exécution dans `OPENCODE_PASSWORD` ou dans
@@ -108,6 +109,11 @@ KEY=$(openssl rand -hex 16)
 echo "clé du poste (à coller dans le navigateur) : $KEY"
 OPENCODE_KEY="$KEY" npm run dev
 ```
+
+Sans `OPENCODE_KEY`, le poste s'ouvre **tout seul depuis la machine** —
+c'est le mode normal sur la boîte qui entraîne. La clé n'est nécessaire
+que pour l'ouvrir **à distance** (une machine exposée, un déploiement
+public).
 
 Le service doit tourner : `opencode service status` doit answered une URL.
 S'il ne répond pas, `opencode service start` (ou laisser le TUI démarrer le

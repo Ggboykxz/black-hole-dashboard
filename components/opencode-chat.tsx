@@ -558,20 +558,23 @@ export default function OpenCodeChat() {
 
   /* ── the gate ───────────────────────────────────────────────────────── */
   const gate = (() => {
-    if (!key) {
+    if (authorized) return null;
+    if (!status && !locked && !disabled) {
       return {
-        title: "Poste verrouillé",
-        body: "Le poste de pilotage parle au service OpenCode de cette machine — un agent qui peut exécuter des commandes. Il est fermé par défaut : la clé se saisit ici, elle reste dans ce navigateur (localStorage), elle n'est ni dans le dépôt ni dans l'URL.",
-        action: "ouvrir",
+        title: "Connexion au poste…",
+        body: "Le dashboard demande l'état du service OpenCode.",
+        action: null,
+        needsKey: false,
       };
     }
     if (disabled) {
       return {
-        title: "Poste désactivé sur ce déploiement",
+        title: "Poste fermé pour cette requête",
         body:
           status?.error ??
-          "OPENCODE_KEY n'est pas défini dans l'environnement du dashboard : le poste reste fermé. Sur une installation publique (Vercel), c'est le comportement voulu.",
-        action: null,
+          "OPENCODE_KEY n'est pas défini et la requête ne vient pas de la machine : le poste reste fermé. Sur un déploiement public (Vercel), c'est le comportement voulu.",
+        action: "réessayer",
+        needsKey: false,
       };
     }
     if (locked) {
@@ -579,16 +582,17 @@ export default function OpenCodeChat() {
         title: "Clé refusée",
         body: "La clé présentée n'est pas celle du serveur. Elle doit correspondre à OPENCODE_KEY, dans l'environnement du dashboard.",
         action: "réessayer",
+        needsKey: true,
       };
     }
-    if (status?.error) {
-      return {
-        title: "Service OpenCode injoignable",
-        body: status.error,
-        action: "réessayer",
-      };
-    }
-    return null;
+    return {
+      title: "Poste fermé",
+      body:
+        status?.error ??
+        "Le poste de pilotage n'a pas répondu. Le service OpenCode est-il lancé ? (`opencode service status`)",
+      action: "réessayer",
+      needsKey: false,
+    };
   })();
 
   return (
@@ -607,6 +611,18 @@ export default function OpenCodeChat() {
             <span className="chip !px-2 !text-[9.5px]">
               service {status?.service?.version ?? "—"}
             </span>
+            {status?.mode === "local" ? (
+              <span
+                className="chip !px-2 !text-[9.5px] !border-good/40 !text-good"
+                title="le poste est ouvert parce que la requête vient de la machine"
+              >
+                ouvert depuis la machine
+              </span>
+            ) : status?.mode === "key" ? (
+              <span className="chip !px-2 !text-[9.5px] !border-accent/40 !text-accent">
+                clé
+              </span>
+            ) : null}
             {status?.service?.pid ? (
               <span className="chip !px-2 !text-[9.5px]">pid {status.service.pid}</span>
             ) : null}
@@ -657,32 +673,42 @@ export default function OpenCodeChat() {
           <p className="mt-1 max-w-3xl text-[11.5px] leading-relaxed text-dim">
             {gate.body}
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <input
-              type="password"
-              value={keyInput}
-              onChange={(e) => setKeyInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") openKey(keyInput);
-              }}
-              placeholder="clé du poste (OPENCODE_KEY)"
-              className="min-w-[220px] flex-1 rounded-lg border border-line bg-[#0a0d13] px-3 py-1.5 font-mono text-[11px] text-ink outline-none focus:border-accent/45"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button
-              onClick={() => openKey(keyInput)}
-              disabled={!keyInput.trim()}
-              className="rounded-full border border-accent/45 bg-accent/[0.08] px-3 py-1.5 text-[10.5px] text-accent transition-colors hover:bg-accent/15 disabled:opacity-40"
-            >
-              {gate.action ?? "connecter"}
-            </button>
-          </div>
-          <p className="mt-2 font-mono text-[9.5px] text-faint">
-            pour ouvrir le poste : OPENCODE_KEY=… dans l&apos;environnement du
-            dashboard, et <span className="text-dim">opencode service status</span>{" "}
-            doit answered le service local
-          </p>
+          {gate.needsKey ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                type="password"
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") openKey(keyInput);
+                }}
+                placeholder="clé du poste (OPENCODE_KEY)"
+                className="min-w-[220px] flex-1 rounded-lg border border-line bg-[#0a0d13] px-3 py-1.5 font-mono text-[11px] text-ink outline-none focus:border-accent/45"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button
+                onClick={() => openKey(keyInput)}
+                disabled={!keyInput.trim()}
+                className="rounded-full border border-accent/45 bg-accent/[0.08] px-3 py-1.5 text-[10.5px] text-accent transition-colors hover:bg-accent/15 disabled:opacity-40"
+              >
+                ouvrir
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => void refresh()}
+                className="rounded-full border border-accent/45 bg-accent/[0.08] px-3 py-1.5 text-[10.5px] text-accent transition-colors hover:bg-accent/15"
+              >
+                {gate.action ?? "réessayer"}
+              </button>
+              <span className="font-mono text-[9.5px] text-faint">
+                pour l&apos;ouvrir à distance : OPENCODE_KEY=… dans
+                l&apos;environnement du dashboard
+              </span>
+            </div>
+          )}
         </div>
       ) : null}
 
@@ -943,6 +969,15 @@ export default function OpenCodeChat() {
 
             {/* the composer */}
             <div className="mt-3 border-t border-line/70 pt-3">
+              <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-[10px] uppercase tracking-[0.12em] text-faint">
+                  ✎ écrire à opencode
+                </span>
+                <span className="num truncate text-[9.5px] text-faint">
+                  {current?.title ?? "aucune session suivie"}
+                  {current?.location ? ` · ${current.location}` : ""}
+                </span>
+              </div>
               {status?.commands?.length ? (
                 <div className="mb-2 flex flex-wrap gap-1.5">
                   {status.commands.map((c) => (

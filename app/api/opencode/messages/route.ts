@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  OC_KEY_HEADER,
   OpenCodeUnavailable,
   keyMatches,
   isLocalRequest,
