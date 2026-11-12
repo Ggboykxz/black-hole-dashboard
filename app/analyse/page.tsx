@@ -12,6 +12,14 @@ const TONE: Record<string, string> = {
   info: "text-accent",
 };
 
+/* the level, said in words: a colour alone is read too late */
+const LEVEL: Record<string, { label: string; chip: string }> = {
+  good: { label: "bon", chip: "border-good/40 bg-good/[0.07] text-good" },
+  warn: { label: "à surveiller", chip: "border-warn/40 bg-warn/[0.07] text-warn" },
+  bad: { label: "critique", chip: "border-bad/45 bg-bad/[0.08] text-bad" },
+  info: { label: "fait établi", chip: "border-accent/40 bg-accent/[0.07] text-accent" },
+};
+
 export default async function AnalysePage() {
   const { snapshot } = await getSnapshot();
   const insights = analyse(snapshot);
@@ -51,6 +59,13 @@ export default async function AnalysePage() {
                   {i.value}
                 </div>
               </div>
+              <span
+                className={`shrink-0 rounded-full border px-2 py-[3px] text-[9.5px] leading-none ${
+                  LEVEL[i.level]?.chip ?? "border-line text-faint"
+                }`}
+              >
+                {LEVEL[i.level]?.label ?? i.level}
+              </span>
             </div>
             <p className="mt-2 text-[11.5px] leading-relaxed text-dim">
               {i.detail}
