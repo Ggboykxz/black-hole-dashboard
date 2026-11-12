@@ -47,6 +47,10 @@ export const GROUPS: { label: string; links: NavLink[] }[] = [
       { href: "/journal", label: "Journal", icon: "☰" },
     ],
   },
+  {
+    label: "le poste",
+    links: [{ href: "/opencode", label: "OpenCode", icon: "◆" }],
+  },
 ];
 
 /** flat view — the palette (⌘K) searches every page in one list */
