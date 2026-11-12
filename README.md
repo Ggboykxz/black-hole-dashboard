@@ -21,6 +21,7 @@
 | `/echantillons` | les générations (qualitatif — jamais une métrique) |
 | `/runbook` | les règles d'or, les pièges, la procédure de reprise |
 | `/journal` | le changelog complet |
+| `/opencode` | **le poste de pilotage** : le chat OpenCode en direct (sessions, messages, outils, permissions) et les commandes pour le piloter — verrouillé par défaut |
 
 Quatre composants d'interaction :
 
@@ -68,6 +69,40 @@ la latence mesurée et l'âge du producteur restent affichés séparément.
 Côté serveur, `nvidia-smi` et `ps` sont mis en cache 2 s pour qu'un poll par
 seconde ne lance pas deux processus par seconde sur la boîte du trainer.
 
+## Le poste de pilotage OpenCode (`/opencode`)
+
+OpenCode fonctionne en **client/serveur** : le TUI, le SDK et son API HTTP
+parlent tous au même service de fond, qui possède les sessions, les outils
+et les permissions. `/opencode` est un **second client** de ce service : il
+montre les conversations en cours et permet de les piloter (écrire,
+interrompre, changer de modèle ou d'agent, répondre à une demande de
+permission).
+
+C'est la seule partie du dashboard qui **agit** au lieu de lire — donc la
+seule qui soit verrouillée :
+
+| condition | ce qui se passe |
+|---|---|
+| `OPENCODE_KEY` absent de l'environnement | le poste est **désactivé** : l'API répond `503`, la page explique pourquoi |
+| `OPENCODE_KEY` défini, clé absente ou fausse | `401` — le poste reste verrouillé |
+| clé correcte | le poste s'ouvre ; la clé reste dans le `localStorage` du navigateur |
+
+Le mot de passe du service OpenCode, lui, **ne quitte jamais le serveur** :
+il est lu à l'exécution dans `OPENCODE_PASSWORD` ou dans
+`~/.config/opencode/service.json`. Il n'est ni écrit dans le dépôt, ni
+envoyé au navigateur, ni journalisé. L'URL du service vient de
+`OPENCODE_URL`, sinon de `opencode service status` (mis en cache 30 s).
+
+```bash
+OPENCODE_KEY=…            # obligatoire pour ouvrir le poste (jamais dans un fichier)
+OPENCODE_URL=…            # optionnel : http://127.0.0.1:4096 par défaut si absent
+OPENCODE_DIRECTORY=/content # optionnel : le répertoire de travail des nouvelles sessions
+OPENCODE_PASSWORD=…       # optionnel : sinon ~/.config/opencode/service.json
+```
+
+Sur un déploiement public (Vercel), le poste n'existe pas : il n'y a pas de
+service OpenCode derrière, et `OPENCODE_KEY` n'y est pas défini.
+
 ## Lancer en local
 
 ```bash
@@ -93,6 +128,7 @@ Sur Colab, le port est exposé par le proxy du notebook :
    | `HF_LIVE_REPO` | `Ggboykxz/black-hole-live` | dépôt du heartbeat |
    | `DASHBOARD_RUN` | `bh-005` | run affiché |
    | `DASHBOARD_REVALIDATE` | `60` | secondes entre deux revalidations ISR |
+   | `OPENCODE_KEY` | secret (optionnel) | ouvre le poste de pilotage `/opencode`. **Sans lui, le poste n'existe pas** — c'est le comportement voulu sur un déploiement public |
 
 3. Deploy. Le contenu se met à jour **tout seul** : le keepalive réécrit
    l'instantané à chaque cycle et le pousse sur le Hub ; l'application le

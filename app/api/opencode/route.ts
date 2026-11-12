@@ -3,6 +3,7 @@ import {
   OC_KEY_HEADER,
   OpenCodeUnavailable,
   keyMatches,
+  ocActiveSessions,
   ocAgents,
   ocCommands,
   ocCreateSession,
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
   const directory = workDir();
 
   try {
-    const [info, sessions, agents, models, commands, permissions] =
+    const [info, sessions, agents, models, commands, permissions, active] =
       await Promise.all([
         ocInfo(),
         ocSessions(),
@@ -72,13 +73,26 @@ export async function GET(req: NextRequest) {
         ocModels(directory),
         ocCommands(directory),
         ocPermissions(directory),
+        ocActiveSessions(),
       ]);
+
+    /* The session the service considers *running* right now: this is how
+       the dashboard knows the developer has just resumed a session, in
+       whatever environment it lives. Everything else is a fallback. */
+    const byUpdated = (a: (typeof sessions)[number], b: (typeof sessions)[number]) =>
+      (b.time?.updated ?? 0) - (a.time?.updated ?? 0);
+    const running = sessions
+      .filter((s) => active[s.id])
+      .sort(byUpdated);
+    const activeSessionID = running[0]?.id ?? null;
 
     return NextResponse.json({
       enabled: true,
       authorized: true,
       directory,
       service: { ...info, url: info.urls?.[0] ?? null },
+      active,
+      activeSessionID,
       sessions: sessions.map((s) => ({
         id: s.id,
         title: s.title ?? s.id,
@@ -89,6 +103,8 @@ export async function GET(req: NextRequest) {
         time: s.time ?? null,
         location: s.location?.directory ?? null,
         outcome: s.outcome ?? null,
+        running: Boolean(active[s.id]),
+        runningType: active[s.id]?.type ?? null,
       })),
       agents: agents
         .filter((a) => !a.hidden)
@@ -138,6 +154,7 @@ interface ActionBody {
   sessionID?: string;
   text?: string;
   title?: string;
+  directory?: string;
   requestID?: string;
   decision?: "once" | "always" | "reject";
   message?: string;
@@ -167,9 +184,13 @@ export async function POST(req: NextRequest) {
   try {
     switch (body.action) {
       case "session.create": {
+        /* the new session is created where the followed session lives —
+           the environments differ, and a session must not be created in
+           another one's directory */
         const session = await ocCreateSession(
           body.title?.trim() || "Session du dashboard",
-          workDir(),
+          body.directory?.trim() || workDir(),
+          body.model,
         );
         return NextResponse.json({ session });
       }

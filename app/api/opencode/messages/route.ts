@@ -17,7 +17,23 @@ export const revalidate = 0;
  * of holding a long-lived stream open: a dropped connection is then a
  * dropped *poll*, not a broken page, and the server never keeps a socket
  * for an idle tab.
+ *
+ * The payload is trimmed: a tool can print megabytes, and le thread du
+ * dashboard n'a pas besoin de la sortie complète d'un `grep` pour être
+ * lisible. Le milieu est coupé, le début et la fin restent.
  */
+
+const MAX_OUTPUT = 4000;
+
+function trim(text: string): string {
+  if (text.length <= MAX_OUTPUT) return text;
+  const head = Math.floor(MAX_OUTPUT * 0.6);
+  const tail = MAX_OUTPUT - head;
+  return `${text.slice(0, head)}\n… [${(text.length - MAX_OUTPUT).toLocaleString(
+    "fr-FR",
+  )} caractères coupés] …\n${text.slice(-tail)}`;
+}
+
 export async function GET(req: NextRequest) {
   if (!pilotEnabled()) {
     return NextResponse.json(
@@ -41,8 +57,16 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const messages = await ocMessages(sessionID, 40);
-    return NextResponse.json({ messages });
+    const messages = await ocMessages(sessionID, 25);
+    const trimmed = messages.map((m) => ({
+      ...m,
+      content: m.content?.map((p) =>
+        p.state?.output
+          ? { ...p, state: { ...p.state, output: trim(p.state.output) } }
+          : p,
+      ),
+    }));
+    return NextResponse.json({ messages: trimmed });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json(

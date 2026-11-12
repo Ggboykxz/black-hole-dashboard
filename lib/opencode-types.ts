@@ -22,6 +22,9 @@ export interface OcSession {
   time?: { created?: number; updated?: number; busy?: number; idle?: number };
   location?: { directory?: string };
   outcome?: string;
+  /** the service marks the sessions it considers running right now */
+  running?: boolean;
+  runningType?: string | null;
 }
 
 export interface OcPart {
@@ -47,6 +50,11 @@ export interface OcMessage {
   time?: { created?: number; completed?: number; streamed?: number };
   model?: OcModelRef;
   agent?: string;
+  /** `error` when the provider or the tool failed */
+  finish?: string;
+  error?: { type?: string; message?: string; status?: number };
+  /** on the `idle` message: what happened to the run */
+  outcome?: string;
 }
 
 export interface OcPermission {
@@ -91,6 +99,10 @@ export interface OcStatus {
   authorized: boolean;
   directory?: string;
   service?: OcServiceInfo;
+  /** sessionID → {type} for the sessions the service runs right now */
+  active?: Record<string, { type: string }>;
+  /** the session the dashboard follows when it is in auto mode */
+  activeSessionID?: string | null;
   sessions?: OcSession[];
   agents?: OcAgent[];
   models?: OcModel[];

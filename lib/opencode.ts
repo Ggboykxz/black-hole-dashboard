@@ -197,10 +197,26 @@ export async function ocInfo(): Promise<OcServiceInfo> {
 }
 
 export async function ocSessions(directory?: string): Promise<OcSession[]> {
-  const q = new URLSearchParams({ limit: "30", order: "desc" });
+  const q = new URLSearchParams({ limit: "50", order: "desc" });
   if (directory) q.set("directory", directory);
   const res = await ocJson<{ data: OcSession[] }>(`/api/session?${q}`);
   return res?.data ?? [];
+}
+
+/**
+ * The sessions the service considers *running* right now.
+ *
+ * This is the signal the dashboard follows to know that the developer has
+ * just resumed a session: the service marks it, the dashboard switches to
+ * it without being told.
+ */
+export async function ocActiveSessions(): Promise<
+  Record<string, { type: string }>
+> {
+  const res = await ocJson<{ data: Record<string, { type: string }> }>(
+    "/api/session/active",
+  );
+  return res?.data ?? {};
 }
 
 export async function ocMessages(
@@ -258,11 +274,16 @@ export async function ocCommands(directory?: string): Promise<OcCommand[]> {
 export async function ocCreateSession(
   title: string,
   directory: string,
+  model?: { id: string; providerID: string; variant?: string },
 ): Promise<OcSession> {
   const res = await ocJson<{ data: OcSession }>("/api/session", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ title, location: { directory } }),
+    body: JSON.stringify({
+      title,
+      location: { directory },
+      ...(model ? { model } : {}),
+    }),
   });
   return res.data;
 }

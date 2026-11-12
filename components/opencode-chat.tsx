@@ -125,6 +125,24 @@ function Message({
   message: OcMessage;
   showReasoning: boolean;
 }) {
+  /* the service says what happened at the end of a run — a failed provider,
+     a cancelled turn, a quota. It is shown as it is: an error is a fact,
+     not a decoration. */
+  if (message.type === "idle") {
+    const failed = message.outcome && message.outcome !== "succeeded";
+    return (
+      <div className="flex items-center gap-2 text-[10px] text-faint">
+        <span className="h-px flex-1 bg-line/70" />
+        <span>
+          {message.outcome ?? "inactif"}
+          {message.error?.message ? ` — ${message.error.message}` : ""}
+        </span>
+        <span className="h-px flex-1 bg-line/70" />
+        {failed ? <span className="text-bad">✕</span> : null}
+      </div>
+    );
+  }
+
   if (message.type === "user") {
     return (
       <div className="border-l-2 border-accent/60 pl-3">
@@ -201,6 +219,17 @@ function Message({
       {tools.map((p, i) => (
         <ToolPart key={p.id ?? i} part={p} />
       ))}
+
+      {message.error?.message ? (
+        <p className="mt-1.5 rounded-lg border border-bad/45 bg-bad/[0.06] px-2.5 py-1.5 text-[11px] leading-relaxed text-bad/90">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.1em]">
+            {message.error.type ?? "erreur"}
+            {message.error.status ? ` · ${message.error.status}` : ""}
+          </span>
+          <br />
+          {message.error.message}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -354,7 +383,9 @@ export default function OpenCodeChat() {
   /* the state every 3 s — the service's own view */
   useEffect(() => {
     if (!authorized) return;
-    const t = window.setInterval(() => void refresh(), 3000);
+    const t = window.setInterval(() => {
+      if (!document.hidden) void refresh();
+    }, 3000);
     return () => window.clearInterval(t);
   }, [authorized, refresh]);
 
@@ -363,6 +394,9 @@ export default function OpenCodeChat() {
     if (!authorized || !sessionID) return;
     let alive = true;
     const tick = async () => {
+      /* un onglet en arrière-plan n'a besoin de rien : on ne brûle pas le
+         service (et le trainer) pour un fil que personne ne regarde */
+      if (document.hidden) return;
       try {
         const body = (await call(
           `/api/opencode/messages?session=${encodeURIComponent(sessionID)}`,
@@ -444,7 +478,16 @@ export default function OpenCodeChat() {
 
   const busy = useMemo(() => {
     const last = messages[messages.length - 1];
-    return Boolean(last && last.type !== "user" && !last.time?.completed);
+    if (!last) return false;
+    if (last.type === "assistant") return !last.time?.completed;
+    if (last.type === "user") {
+      /* a user message that no assistant has answered yet */
+      const born = last.time?.created ?? 0;
+      return !messages.some(
+        (m) => m.type === "assistant" && (m.time?.created ?? 0) > born,
+      );
+    }
+    return false;
   }, [messages]);
 
   /* ── the gate ───────────────────────────────────────────────────────── */
@@ -594,7 +637,13 @@ export default function OpenCodeChat() {
               <button
                 onClick={() =>
                   void act(
-                    { action: "session.create", title: "Session du dashboard" },
+                    {
+                      action: "session.create",
+                      title: "Session du dashboard",
+                      /* a new session starts on the model of the session
+                         being watched — the one that is known to answer */
+                      model: current?.model ?? undefined,
+                    },
                     "session créée",
                   )
                 }
