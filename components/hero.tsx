@@ -78,6 +78,23 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
     .filter((v): v is number => typeof v === "number" && Number.isFinite(v))
     .slice(-80);
 
+  /** what the tooltip of a sparkline says: extent, not interpretation */
+  const extent = (values: number[]) =>
+    `${values.length} points · min ${f4(Math.min(...values))} · max ${f4(
+      Math.max(...values),
+    )}`;
+
+  /* The train loss' own trend: the last two *distinct* measurements of the
+     series, never two reads of the same log line. A loss that goes down is
+     good — the arrow says so, the number stays exact. */
+  const trainTrend = useMemo(() => {
+    if (feed.rows.length < 2) return null;
+    const prev = feed.rows[feed.rows.length - 2].loss;
+    const last = feed.rows[feed.rows.length - 1].loss;
+    if (!Number.isFinite(prev) || !Number.isFinite(last)) return null;
+    return last - prev;
+  }, [feed.rows]);
+
   return (
     <div
       className="card relative overflow-hidden"
@@ -214,11 +231,34 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
           <Stat
             label="perte d'entraînement"
             value={f4(loss)}
-            sub={live?.train_loss !== null && live?.train_loss !== undefined ? "live · tendance seule" : "instantané"}
+            sub={
+              live?.train_loss !== null && live?.train_loss !== undefined ? (
+                <span className="flex flex-wrap items-baseline gap-x-1.5">
+                  <span>live</span>
+                  {trainTrend !== null && trainTrend !== 0 ? (
+                    <span
+                      className={trainTrend < 0 ? "text-good" : "text-bad"}
+                      title="écart entre les deux dernières mesures distinctes de la perte"
+                    >
+                      {trainTrend < 0 ? "▼" : "▲"} {f4(Math.abs(trainTrend))}
+                    </span>
+                  ) : (
+                    <span className="text-faint">stable</span>
+                  )}
+                </span>
+              ) : (
+                "instantané"
+              )
+            }
             tone="accent"
             spark={
               trainSpark.length > 2 ? (
-                <Sparkline values={trainSpark} color="#38bdf8" className="h-7 w-full" />
+                <Sparkline
+                  values={trainSpark}
+                  color="#38bdf8"
+                  className="h-7 w-full"
+                  label={extent(trainSpark)}
+                />
               ) : undefined
             }
           />
@@ -228,7 +268,12 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
             sub={st.val_last ? `au step ${fmtStep(st.val_last.step)}` : "—"}
             spark={
               valSpark.length > 2 ? (
-                <Sparkline values={valSpark} color="#a78bfa" className="h-7 w-full" />
+                <Sparkline
+                  values={valSpark}
+                  color="#a78bfa"
+                  className="h-7 w-full"
+                  label={extent(valSpark)}
+                />
               ) : undefined
             }
           />
@@ -239,7 +284,12 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
             tone="accent"
             spark={
               benchSpark.length > 2 ? (
-                <Sparkline values={benchSpark} color="#38bdf8" className="h-7 w-full" />
+                <Sparkline
+                  values={benchSpark}
+                  color="#38bdf8"
+                  className="h-7 w-full"
+                  label={extent(benchSpark)}
+                />
               ) : undefined
             }
           />
@@ -254,7 +304,12 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
             tone="warn"
             spark={
               reasonSpark.length > 2 ? (
-                <Sparkline values={reasonSpark} color="#fbbf24" className="h-7 w-full" />
+                <Sparkline
+                  values={reasonSpark}
+                  color="#fbbf24"
+                  className="h-7 w-full"
+                  label={extent(reasonSpark)}
+                />
               ) : undefined
             }
           />
@@ -264,7 +319,12 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
             sub="cosine → 1e-5"
             spark={
               lrSpark.length > 2 ? (
-                <Sparkline values={lrSpark} color="#94a3b8" className="h-7 w-full" />
+                <Sparkline
+                  values={lrSpark}
+                  color="#94a3b8"
+                  className="h-7 w-full"
+                  label={`${lrSpark.length} points · de ${lrSpark[0].toExponential(3)} à ${lrSpark[lrSpark.length - 1].toExponential(3)}`}
+                />
               ) : undefined
             }
           />
@@ -274,7 +334,12 @@ export default function Hero({ snapshot }: { snapshot: Snapshot }) {
             sub={`s/step · ${int(tok)} tok/s`}
             spark={
               tokSpark.length > 2 ? (
-                <Sparkline values={tokSpark} color="#34d399" className="h-7 w-full" />
+                <Sparkline
+                  values={tokSpark}
+                  color="#34d399"
+                  className="h-7 w-full"
+                  label={extent(tokSpark)}
+                />
               ) : undefined
             }
           />

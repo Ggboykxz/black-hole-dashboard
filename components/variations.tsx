@@ -168,6 +168,13 @@ function MetricCard({ spec, samples, now, windowMs }: CardProps) {
         values={sparkValues}
         color={spec.color}
         className="mt-1.5 h-7 w-full opacity-90 transition-opacity group-hover:opacity-100"
+        label={`${spec.label} · ${sparkValues.length} mesures · min ${fmtValue(
+          spec,
+          sparkValues.length ? Math.min(...sparkValues) : null,
+        )} · max ${fmtValue(
+          spec,
+          sparkValues.length ? Math.max(...sparkValues) : null,
+        )}`}
       />
 
       {/* the ruler: min — current — max, at the width of the window */}

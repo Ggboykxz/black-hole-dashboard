@@ -104,9 +104,11 @@ export function Stat({
       {sub ? <div className="mt-1 text-[10.5px] leading-snug text-dim">{sub}</div> : null}
       {/* the sparkline is a reading, not a backdrop: it sits under the value,
           full width, and only takes the space it needs. An empty series is
-          not drawn at all — the number above is already the truth. */}
+          not drawn at all — the number above is already the truth. The
+          wrapper keeps the pointer events, so the SVG's own <title> (min,
+          max, nombre de points) s'affiche au survol. */}
       {spark ? (
-        <div className="pointer-events-none mt-auto pt-2 opacity-80 transition-opacity group-hover:opacity-100">
+        <div className="mt-auto pt-2 opacity-80 transition-opacity group-hover:opacity-100">
           {spark}
         </div>
       ) : null}

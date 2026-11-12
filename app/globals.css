@@ -195,6 +195,31 @@ body {
   }
 }
 
+/* a line that just arrived in the change feed: it slides in and fades —
+   the eye catches the *new* line without the list jumping */
+.change-enter {
+  animation: changeEnter 700ms cubic-bezier(.22, .61, .36, 1);
+}
+
+@keyframes changeEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(-5px);
+    background-color: rgba(56, 189, 248, 0.1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .change-enter {
+    animation: none;
+  }
+}
+
 /* the copilot's ring when it is pointing at something */
 @keyframes ringSpin {
   from {

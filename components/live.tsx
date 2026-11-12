@@ -22,6 +22,14 @@ interface Props {
   generatedAt?: string;
 }
 
+/** the colour of each actor of the chain — the same reading in every list */
+const ROLE_COLOR: Record<string, string> = {
+  trainer: "#38bdf8",
+  watchdog: "#34d399",
+  keepalive: "#fbbf24",
+  "keepalive-watchdog": "#a78bfa",
+};
+
 /** One measured number, with the exact value the producer wrote. */
 function Tile({
   label,
@@ -191,6 +199,19 @@ export default function LivePanel({
   const lrSpark = sampleSeries("lr");
   const gradSpark = sampleSeries("grad_norm");
   const tokSpark = sampleSeries("tokens_per_s");
+
+  /** what the tooltip of a sparkline says: extent, not interpretation */
+  const extent = (values: number[]) =>
+    `${values.length} points · min ${f4(Math.min(...values))} · max ${f4(
+      Math.max(...values),
+    )}`;
+
+  /* the oldest process is the reference: the bars compare the actors of the
+     chain with each other, they do not measure anything new */
+  const procMax =
+    live?.processes?.length
+      ? Math.max(...live.processes.map((p) => p.up_s))
+      : 0;
 
   /** the measured activity of the run: values actually changed in the last minute */
   const activityPerMin = useMemo(() => {
@@ -381,7 +402,12 @@ export default function LivePanel({
               }
               spark={
                 trainSpark.length > 2 ? (
-                  <Sparkline values={trainSpark} color="#38bdf8" className="h-6 w-full" />
+                  <Sparkline
+                    values={trainSpark}
+                    color="#38bdf8"
+                    className="h-6 w-full"
+                    label={extent(trainSpark)}
+                  />
                 ) : undefined
               }
             />
@@ -392,7 +418,12 @@ export default function LivePanel({
               sub="cosine, pas encore de gel"
               spark={
                 lrSpark.length > 2 ? (
-                  <Sparkline values={lrSpark} color="#94a3b8" className="h-6 w-full" />
+                  <Sparkline
+                    values={lrSpark}
+                    color="#94a3b8"
+                    className="h-6 w-full"
+                    label={extent(lrSpark)}
+                  />
                 ) : undefined
               }
             />
@@ -403,7 +434,12 @@ export default function LivePanel({
               sub="clippé à 1.0"
               spark={
                 gradSpark.length > 2 ? (
-                  <Sparkline values={gradSpark} color="#fbbf24" className="h-6 w-full" />
+                  <Sparkline
+                    values={gradSpark}
+                    color="#fbbf24"
+                    className="h-6 w-full"
+                    label={extent(gradSpark)}
+                  />
                 ) : undefined
               }
             />
@@ -415,7 +451,12 @@ export default function LivePanel({
               sub={`${int(live?.tokens_per_s ? live.tokens_per_s * 60 : null)} tok/min`}
               spark={
                 tokSpark.length > 2 ? (
-                  <Sparkline values={tokSpark} color="#34d399" className="h-6 w-full" />
+                  <Sparkline
+                    values={tokSpark}
+                    color="#34d399"
+                    className="h-6 w-full"
+                    label={extent(tokSpark)}
+                  />
                 ) : undefined
               }
             />
@@ -512,10 +553,12 @@ export default function LivePanel({
           <ul className="relative max-h-[340px] space-y-0.5 overflow-y-auto pr-1">
             {/* the timeline: a line, and one dot per measured change */}
             <span className="pointer-events-none absolute bottom-2 left-[7px] top-2 w-px bg-white/[0.07]" />
-            {changes.slice(0, 60).map((c) => (
+            {changes.slice(0, 60).map((c, idx) => (
               <li
                 key={c.id}
-                className="group relative flex items-baseline gap-2 rounded-md py-1 pl-5 pr-1.5 text-[11px] hover:bg-white/[0.03]"
+                className={`group relative flex items-baseline gap-2 rounded-md py-1 pl-5 pr-1.5 text-[11px] hover:bg-white/[0.03] ${
+                  idx === 0 ? "change-enter" : ""
+                }`}
               >
                 <span
                   className="absolute left-[4px] top-[7px] h-[7px] w-[7px] rounded-full ring-4 ring-[#0f1218]"
@@ -711,17 +754,43 @@ export default function LivePanel({
 
           {live?.processes?.length ? (
             <div className="card p-4" data-bot-target="processes">
-              <h3 className="mb-2 text-[12.5px] text-ink">Processus</h3>
-              <ul className="space-y-1.5 text-[11.5px]">
-                {live.processes.map((p) => (
-                  <li key={`${p.role}-${p.pid}`} className="flex justify-between gap-3">
-                    <span className="text-dim">
-                      {p.role}
-                      <span className="num ml-1 text-faint">pid {p.pid}</span>
-                    </span>
-                    <span className="num text-ink">{duration(p.up_s)}</span>
-                  </li>
-                ))}
+              <div className="mb-2 flex items-baseline justify-between gap-2">
+                <h3 className="text-[12.5px] text-ink">Processus</h3>
+                <span className="font-mono text-[9.5px] text-faint">
+                  durée de vie · le plus ancien sert de référence
+                </span>
+              </div>
+              <ul className="space-y-2">
+                {live.processes.map((p) => {
+                  const color = ROLE_COLOR[p.role] ?? "#64708a";
+                  const ratio = procMax > 0 ? Math.min(1, p.up_s / procMax) : 0;
+                  return (
+                    <li key={`${p.role}-${p.pid}`}>
+                      <div className="flex items-baseline justify-between gap-3 text-[11.5px]">
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span
+                            className="h-1.5 w-1.5 shrink-0 rounded-full"
+                            style={{
+                              background: color,
+                              boxShadow: `0 0 6px ${color}55`,
+                            }}
+                          />
+                          <span className="truncate text-dim">{p.role}</span>
+                          <span className="num shrink-0 text-[9.5px] text-faint">
+                            pid {p.pid}
+                          </span>
+                        </span>
+                        <span className="num shrink-0 text-ink">{duration(p.up_s)}</span>
+                      </div>
+                      <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-white/[0.05]">
+                        <div
+                          className="h-full rounded-full transition-[width] duration-700 ease-out"
+                          style={{ width: `${ratio * 100}%`, background: color }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ) : null}
