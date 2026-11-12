@@ -1,14 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  OC_KEY_HEADER,
   OpenCodeUnavailable,
   keyMatches,
+  isLocalRequest,
   ocMessages,
   pilotEnabled,
 } from "@/lib/opencode";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+/** the same gate as `/api/opencode` — local requests, or the key */
+function gate(req: NextRequest): { mode: "key" | "local" } | { error: string; status: number } {
+  if (pilotEnabled()) {
+    return keyMatches(req.headers.get(OC_KEY_HEADER))
+      ? { mode: "key" }
+      : {
+          error: "clé absente ou incorrecte — le poste de pilotage est verrouillé",
+          status: 401,
+        };
+  }
+  if (isLocalRequest(req.headers)) return { mode: "local" };
+  return {
+    error:
+      "le poste de pilotage n'est ouvert que depuis la machine — définis OPENCODE_KEY pour l'ouvrir à distance",
+    status: 503,
+  };
+}
 
 /**
  * The thread of one session.
@@ -35,20 +53,9 @@ function trim(text: string): string {
 }
 
 export async function GET(req: NextRequest) {
-  if (!pilotEnabled()) {
-    return NextResponse.json(
-      {
-        error:
-          "poste de pilotage désactivé — OPENCODE_KEY n'est pas défini dans l'environnement du dashboard",
-      },
-      { status: 503 },
-    );
-  }
-  if (!keyMatches(req.headers.get(OC_KEY_HEADER))) {
-    return NextResponse.json(
-      { error: "clé absente ou incorrecte — le poste de pilotage est verrouillé" },
-      { status: 401 },
-    );
+  const g = gate(req);
+  if ("error" in g) {
+    return NextResponse.json({ error: g.error }, { status: g.status });
   }
 
   const sessionID = req.nextUrl.searchParams.get("session") ?? "";

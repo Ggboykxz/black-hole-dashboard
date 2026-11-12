@@ -46,6 +46,32 @@ export function pilotEnabled(): boolean {
   return typeof key === "string" && key.length > 0;
 }
 
+/**
+ * Is the request coming from this machine?
+ *
+ * A request that goes through a proxy carries `x-forwarded-for`; a request
+ * that comes straight from the box does not. On Colab, the notebook proxy
+ * connects to the dashboard locally — so the dashboard sees a local request
+ * even though the browser is somewhere else (behind the Google session).
+ *
+ * This is what lets the pilot open *by itself* on the machine that runs
+ * OpenCode — the operator writes to the agent from the site without any
+ * ceremony — while a deployment reachable from the network keeps its
+ * key gate.
+ */
+export function isLocalRequest(headers: Headers): boolean {
+  const forwarded = headers.get("x-forwarded-for");
+  if (!forwarded) return true; /* direct connection to this box */
+  const first = forwarded.split(",")[0]?.trim() ?? "";
+  if (!first) return true;
+  return (
+    first === "::1" ||
+    first === "0:0:0:0:0:0:0:1" ||
+    first.startsWith("127.") ||
+    first.startsWith("::ffff:127.")
+  );
+}
+
 /** constant-time comparison of the key presented by the browser */
 export function keyMatches(provided: string | null | undefined): boolean {
   const expected = process.env.OPENCODE_KEY;

@@ -4,6 +4,7 @@ import {
   OC_KEY_HEADER,
   OpenCodeUnavailable,
   keyMatches,
+  isLocalRequest,
   ocActiveSessions,
   ocAgents,
   ocCommands,
@@ -31,17 +32,23 @@ export const revalidate = 0;
  * The pilot's endpoint.
  *
  * It is the **only** place where the dashboard can act instead of read, so
- * it is closed by default:
+ * it is closed by default — but "closed by default" must not mean
+ * "unusable by the person who owns the box".
  *
- * * without `OPENCODE_KEY` in the dashboard's environment, every call
- *   answers 503 — the feature does not exist;
- * * with the key set, the browser must present it (`x-opencode-key`);
- * * the service's own password is added server-side and never leaves.
+ * Two gates, and one of them is enough:
  *
- * The dashboard is published on GitHub and deployed on Vercel: a public
- * route that can run commands on the trainer's machine would be a shell
- * with a web form. The gate is the difference between a dashboard and a
- * backdoor.
+ * * `OPENCODE_KEY` set → the browser must present that key. This is the
+ *   mode for a deployment reachable from the network (Vercel, une machine
+ *   exposée) : le dashboard est public, un canal vers un agent qui
+ *   exécute des commandes serait une porte dérobée.
+ * * `OPENCODE_KEY` absent → le poste s'ouvre **seulement pour les
+ *   requêtes venant de la machine** (pas de `x-forwarded-for`, ou une IP
+ *   de boucle). Sur la boîte qui entraîne, le proxy Colab se connecte
+ *   localement : le site est donc utilisable tel quel, et l'opérateur
+ *   écrit à l'agent sans ceremony.
+ *
+ * Le service garde toujours son mot de passe : il est ajouté côté serveur
+ * et ne quitte jamais la machine.
  */
 
 function denied(reason: string, status: number) {
@@ -55,14 +62,29 @@ function unauthorized() {
   );
 }
 
-export async function GET(req: NextRequest) {
-  if (!pilotEnabled()) {
-    return denied(
-      "poste de pilotage désactivé — OPENCODE_KEY n'est pas défini dans l'environnement du dashboard",
-      503,
-    );
+/**
+ * May this request use the pilot?
+ *
+ * Returns the mode it was granted in, or an error to answer with.
+ */
+function gate(req: NextRequest): { mode: "key" | "local" } | { error: string; status: number } {
+  if (pilotEnabled()) {
+    return keyMatches(req.headers.get(OC_KEY_HEADER))
+      ? { mode: "key" }
+      : { error: "clé absente ou incorrecte — le poste de pilotage est verrouillé", status: 401 };
   }
-  if (!keyMatches(req.headers.get(OC_KEY_HEADER))) return unauthorized();
+  /* no key configured: the pilot opens on the box itself */
+  if (isLocalRequest(req.headers)) return { mode: "local" };
+  return {
+    error:
+      "le poste de pilotage n'est ouvert que depuis la machine — définis OPENCODE_KEY pour l'ouvrir à distance",
+    status: 503,
+  };
+}
+
+export async function GET(req: NextRequest) {
+  const g = gate(req);
+  if ("error" in g) return NextResponse.json({ error: g.error }, { status: g.status });
 
   /* The environments differ: the session the dashboard follows may live in
      another directory than the default one. The caller says which session
@@ -105,6 +127,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       enabled: true,
       authorized: true,
+      mode: g.mode,
       directory: location,
       service: { ...info, url: info.urls?.[0] ?? null },
       active,
@@ -180,13 +203,8 @@ interface ActionBody {
 }
 
 export async function POST(req: NextRequest) {
-  if (!pilotEnabled()) {
-    return denied(
-      "poste de pilotage désactivé — OPENCODE_KEY n'est pas défini dans l'environnement du dashboard",
-      503,
-    );
-  }
-  if (!keyMatches(req.headers.get(OC_KEY_HEADER))) return unauthorized();
+  const g = gate(req);
+  if ("error" in g) return NextResponse.json({ error: g.error }, { status: g.status });
 
   let body: ActionBody;
   try {

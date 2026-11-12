@@ -321,7 +321,7 @@ export default function OpenCodeChat() {
   const [polls, setPolls] = useState(0);
   const bottom = useRef<HTMLDivElement | null>(null);
 
-  const authorized = Boolean(key) && !locked && !disabled;
+  const authorized = !locked && !disabled && status?.authorized === true;
 
   /* ── the key lives in this browser, nowhere else ─────────────────────── */
   useEffect(() => {
@@ -418,10 +418,12 @@ export default function OpenCodeChat() {
     }
   }, [call, key, sessionID, location]);
 
+  /* the connection is tried even without a key: the server decides. On the
+     machine that runs OpenCode, the pilot opens by itself — the operator
+     writes to the agent from the site without any ceremony. */
   useEffect(() => {
-    if (!key) return;
     void refresh();
-  }, [key, refresh]);
+  }, [refresh]);
 
   /* the state every 3 s — the service's own view */
   useEffect(() => {
