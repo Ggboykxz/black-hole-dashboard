@@ -1,0 +1,1511 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ theme */
+:root {
+  --bg: #07080b;
+  --bg-soft: #0b0d12;
+  --panel: #0f1218;
+  --panel-2: #141822;
+  --line: #1e2430;
+  --line-soft: #171c26;
+  --ink: #e6eaf2;
+  --ink-dim: #98a2b6;
+  --ink-faint: #64708a;
+  --accent: #38bdf8;
+  --accent-2: #a78bfa;
+  --good: #34d399;
+  --warn: #fbbf24;
+  --bad: #fb7185;
+  --hot: #f97316;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel2: var(--panel-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-dim: var(--ink-dim);
+  --color-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent2: var(--accent-2);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-hot: var(--hot);
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo,
+    Consolas, monospace;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-image:
+    radial-gradient(1100px 520px at 12% -8%, rgba(56, 189, 248, 0.07), transparent 60%),
+    radial-gradient(900px 480px at 88% -4%, rgba(167, 139, 250, 0.07), transparent 62%);
+  background-attachment: fixed;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+/* ------------------------------------------------------------ micro-interactions */
+/* ------------------------------------------------------------ liquid glass */
+.card {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0) 42%),
+    linear-gradient(160deg, rgba(56, 189, 248, 0.05), rgba(167, 139, 250, 0.03) 55%, transparent 80%),
+    rgba(15, 18, 24, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 18px;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    0 18px 40px -30px rgba(0, 0, 0, 0.9);
+  transition: border-color 200ms ease, transform 220ms cubic-bezier(.22,.61,.36,1),
+    box-shadow 220ms ease, background 220ms ease;
+}
+
+/* the light that slides across the top of the glass */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.055) 42%,
+    transparent 62%
+  );
+  background-size: 220% 100%;
+  opacity: 0;
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+
+.card:hover {
+  border-color: rgba(125, 211, 252, 0.22);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    0 26px 50px -32px rgba(56, 189, 248, 0.45);
+}
+
+.card:hover::before {
+  opacity: 1;
+  background-position: 100% 0;
+  transition: opacity 260ms ease, background-position 900ms ease;
+}
+
+/* the soft sheen of a glass edge */
+.card-head {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.022), transparent);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 17px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--ink-dim);
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(10px);
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease,
+    transform 160ms ease;
+}
+
+.chip:hover {
+  border-color: rgba(125, 211, 252, 0.35);
+  color: var(--ink);
+  background: rgba(56, 189, 248, 0.08);
+  transform: translateY(-1px);
+}
+
+/* the glass used by the tables' header and the floating panels */
+.glass {
+  background: rgba(15, 18, 24, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* The live indicator. Its colour is *bound to the state of the signal*
+   (live = green, stale = amber, frozen/none = red) and is injected inline
+   with `--pulse-color`, so the dot, its halo and the label can never
+   disagree about whether the data is fresh. */
+.pulse {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--pulse-color, var(--good));
+}
+
+.pulse::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  border: 1px solid var(--pulse-color, var(--good));
+  opacity: 0.6;
+  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* a state that is not "live" must not ping: a frozen snapshot has no beat */
+.pulse-static::after {
+  animation: none;
+  opacity: 0.28;
+}
+
+/* the "seen" tick of a number that just changed */
+@keyframes flashValue {
+  0% {
+    background-color: rgba(56, 189, 248, 0.28);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* the copilot's ring when it is pointing at something */
+@keyframes ringSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* a soft "breathing" halo for the minibots that are working */
+@keyframes haloPulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.04);
+  }
+}
+
+/* the halo of the last measured point: the curve stops where the data
+   stops, and the eye must be able to see where that is */
+@keyframes chartPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.24;
+  }
+  70% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.chart-last {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chartPulse 2.6s ease-out infinite;
+}
+
+@keyframes ping {
+  75%,
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.045);
+    opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #10141c 25%, #171d28 37%, #10141c 63%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1b212c;
+  border-radius: 8px;
+  border: 2px solid var(--bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #273040;
+}
+
+table.dt {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+table.dt th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: 10px;
+  padding: 8px 11px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  position: sticky;
+  top: 0;
+  background: rgba(13, 16, 22, 0.86);
+  backdrop-filter: blur(12px);
+  z-index: 1;
+}
+
+table.dt td {
+  padding: 8px 11px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+  vertical-align: top;
+}
+
+table.dt tbody tr {
+  transition: background 120ms ease;
+}
+
+table.dt tbody tr:hover {
+  background: rgba(56, 189, 248, 0.06);
+}
+
+/* ------------------------------------------------------------ accessibility */
+/* The keyboard must be visible: a mouse is not the only way to drive a
+   dashboard, and a focus ring that nobody can see is a focus ring that
+   does not exist. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.28);
+  color: #fff;
+}
+
+/* Motion is decoration here: every number stays readable without it. When the
+   OS asks for less motion, the dashboard stops moving — the data, the states
+   and the freshness bars do not depend on an animation to be understood. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ══ Toast stack (components/toast-stack.tsx) ══════════════════════════
+   Three toasts stacked, fanning into a list on hover. Tones are the
+   reference's: the front one white, the tucked ones a barely-there
+   2% grey — both the same, so they read as paper behind paper rather
+   than a darkening ramp. Where the reference separates them with a
+   soft shadow, this uses a faint hairline (no drop shadows on the
+   bench). Status icons are their own solid colours, never faded.
+
+   ICI, la pile vit sur le thème sombre du dashboard : le « papier »
+   est --panel-2 et le « 2 % de gris » un lavage de --ink dans la dalle.
+   Les jetons Bencho sont mappés sur ceux du projet, sur la racine du
+   composant uniquement — rien n'est défini en global, rien ne fuit. */
+.tst {
+  position: relative;
+  font-family: var(--font-ui);
+  color: var(--fill-on, var(--ink));
+  /* ── mapping des jetons Bencho → jetons du projet ─────────────
+     --fill-on   : l'encre du texte/icônes sur la dalle → --ink
+     --fill-slab : la surface d'un toast → --panel-2 (la carte, un
+                   ton au-dessus de --panel)
+     --font-ui   : la pile sans-serif du corps (globals.css `body`)
+     --pane-edge : le filet des panneaux → --line
+     --signal    : l'anneau de focus → --accent (le même que la règle
+                   globale :focus-visible — le composant ne peut pas
+                   contredire le site sur ce que « focus » veut dire)
+     --ink       : le projet définit déjà --ink au même poste — pas de
+                   redéfinition (une auto-référence serait circulaire)
+     --tst-r     : le rayon ; posé en ligne par le composant (corner
+                   par défaut 18, le rayon de `.card`) */
+  --fill-on: var(--ink);
+  --fill-slab: var(--panel-2);
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --pane-edge: var(--line);
+  --signal: var(--accent);
+  --tst-mute: color-mix(in srgb, var(--fill-on, #17181a) 52%, var(--fill-slab, #ffffff));
+  --tst-wash: color-mix(in srgb, var(--fill-on, #17181a) 6%, var(--fill-slab, #ffffff));
+}
+
+.tst-toast {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px 0 16px;
+  border-radius: var(--tst-r);
+  background: var(--fill-slab, #ffffff);
+  transform-origin: 50% 0;
+  transition: background-color 220ms ease, box-shadow 220ms ease;
+}
+
+/* tucked: the same near-white for both, and a faint edge so each
+   sliver has a line to read by */
+.tst:not([data-open]) .tst-toast:not([data-front]) {
+  background: color-mix(in srgb, var(--fill-on, #17181a) 6%, var(--fill-slab, #ffffff));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fill-on, #17181a) 6%, transparent);
+}
+
+[data-stroke="on"] .tst-toast { box-shadow: 0 0 0 1px var(--pane-edge); }
+
+/* only the front one is read while stacked; the rest are slivers */
+.tst-toast > * { transition: opacity 220ms ease; }
+
+.tst:not([data-open]) .tst-toast:not([data-front]) > * { opacity: 0; }
+
+.tst-icon { flex: none; display: grid; place-items: center; }
+
+/* les teintes de statut sont celles du projet, pas des hexes de la
+   référence : le dashboard a déjà dit ce que veulent dire bon/warn/bad */
+.tst-toast[data-kind="success"] .tst-icon { color: var(--good); }
+
+.tst-toast[data-kind="error"] .tst-icon { color: var(--bad); }
+
+.tst-toast[data-kind="warning"] .tst-icon { color: var(--warn); }
+
+.tst-toast[data-kind="info"] .tst-icon { color: var(--tst-mute); }
+
+.tst-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.tst-text b { font-size: 14px; font-weight: 500; line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
+
+.tst-text span { font-size: 13px; line-height: 17px; color: var(--tst-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0em; }
+
+.tst-act {
+  flex: none;
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--tst-wash);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: scale 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  letter-spacing: 0em;
+}
+
+.tst-act:active { scale: 0.96; }
+
+.tst-x {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--tst-mute);
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.tst-x:hover { background: var(--tst-wash); color: var(--fill-on, var(--ink)); }
+
+.tst-act:focus-visible, .tst-x:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--signal, #2231dd); }
+
+/* ════════════════════════════════════════════════════════════
+   Les jetons Bencho, une fois pour toutes dans cette feuille.
+
+   Le mapping est TOUJOURS posé sur la racine du composant qui
+   lit les jetons — jamais en :root global, pour que rien ne
+   fuisse et que deux composants puissent mapper différemment
+   le même poste si leurs métiers l'exigent (c'est le cas de
+   la balle, voir .drg-well).
+
+   Correspondances utilisées ici :
+
+   --ink, --bg          : le projet les définit déjà au même
+                          poste (texte, fond) — pas de
+                          redéfinition, une auto-référence
+                          serait circulaire.
+   --ink-rgb, --fill-on-rgb, --shadow-rgb : les mêmes couleurs
+                          en trois nombres nus (230 234 242 /
+                          0 0 0), le CSS construit des rgba().
+   --fill-on            : l'encre de premier plan → --ink.
+   --fill-slab          : la surface → --panel-2. EXCEPTION
+                          documentée sur .drg-well.
+   --card               : la surface d'un panneau → --panel.
+   --board              : le fond surélevé de la référence →
+                          --bg ici.
+   --ok / --ember       : hausse / baisse → --good / --bad.
+   --pane               : le verre du projet → la même teinte
+                          que `.card` : rgba(15, 18, 24, 0.62).
+   --pane-edge          : le filet des panneaux → le même que
+                          `.card` : rgba(255, 255, 255, 0.07).
+   --on-ink             : ce qui s'écrit SUR l'encre → --bg.
+   --font-ui            : la pile sans-serif du corps.
+   --g-blur, --g-sat    : le frost du projet → 18px / 140%
+                          (les valeurs de `.card`).
+   --g-bright           : inchangé (100%).
+
+   Jetons SANS équivalent ici, élagués avec leurs règles :
+   --nod-r, --try-edge, --tip (posé en ligne par le composant
+   à chaque rendu — variable d'exécution, pas un jeton de
+   thème), --g-edge-* / --g-spec / --g-lift / --g-shadow
+   (l'infrastructure [data-surface] / [data-stroke] de
+   l'atelier Bencho, remplacée par le verre du projet tel
+   qu'il est — voir la note sur .gdock). */
+
+/* ════════════════════════════════════════════════════════════
+   ── interrupteur liquide (components/liquid-toggle.tsx) ── */
+
+.liq-well {
+  width: 240px; height: 130px;
+  display: grid; place-items: center;
+  /* mapping (voir l'en-tête ci-dessus) */
+  --fill-on: var(--ink);
+  --fill-slab: var(--panel-2);
+  --card: var(--panel);
+  --board: var(--bg);
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;}
+
+/* ── BLACK AND WHITE, AND NO EDGE OF ITS OWN ────────────────
+   The on state was a green wash with a green ring, which made
+   this the only block on the bench asserting a colour nothing
+   else uses — and a switch does not need a hue to say it is
+   on. It inverts instead: a light track with a dark thumb
+   becomes a dark track with a light one, which is the strongest
+   thing two colours can say and the only thing this component
+   has to say.
+
+   `--fill-on` / `--fill-slab` rather than --ink / --board, so
+   the pair follows the Fill control the entry declares instead
+   of naming a colour twice.
+
+   And no inset ring. It carried one unconditionally, which is
+   an edge the Stroke switch cannot take away — the same bug
+   the sleep pill, the command bar and the Notify pill all had.
+   Stroke's own rule is a few hundred lines up. */
+.liq-sw {
+  position: relative;
+  width: 92px; height: 46px;
+  padding: 0; border: 0;
+  /* ── ALWAYS A PILL ────────────────────────────────────────
+     It took a Corner knob for a while and does not any more.
+     A switch is a pill: that is the shape the gesture is named
+     after, and squaring it turns a thing you slide into a
+     thing you click. The droplet inside followed the knob too,
+     concentrically, and the same argument applies twice over —
+     one number that could only ever make the component less
+     like itself. */
+  border-radius: 999px;
+  /* ── OFF IS THE SLAB, NOT A GREY ─────────────────────────
+     The two states are the two ends of the fill's own ramp,
+     and OFF is the light end of it: the track is the slab —
+     white on a light fill, near-black on a dark one — and the
+     dot is a grey mixed toward it. ON is the inversion, ink
+     track and slab dot, which is what it always was.
+
+     Read across the pair, the TRACK carries the state and the
+     dot is along for the ride. It was the other way round:
+     the off track was a 12% wash and the dot was full ink, so
+     the loud half of the switch was the part that only moves.
+
+     It reads because the card behind is not white — the stage
+     is the board's own grey, so a white pill on it is an
+     object. Stroke's hairline is there for anywhere it is
+     not. */
+  background: var(--fill-slab, var(--card));
+  cursor: pointer;
+  /* it is a rail you can push along, not only a button */
+  touch-action: none;
+  transition: background 420ms ease;}
+
+.liq-sw[data-on="true"] { background: var(--fill-on, var(--ink)); }
+
+.liq-sw-blobs {
+  position: absolute; inset: 0;}
+
+/* opaque on purpose: a goo filter over a translucent fill
+   thresholds the alpha away and the shape disappears */
+/* left: 0 is not optional. These are inline elements, so with
+   left: auto the static position is wherever the line box put
+   them — and the button they sit in centres its text, which
+   pushed both blobs to the middle of the track and the thumb
+   clean off the end of it. */
+/* ── the droplet, and it is the ONLY body ───────────────────
+   There was a second, smaller blob running behind it on a
+   lagging spring; the goo between them necked into a thread,
+   which is what a trail is and what it looks like. It is one
+   body that stretches now — see the note in Liquid.tsx, and
+   the dragging ball's, which lost the same thing first.
+
+   `left: 0` is not optional. It is an inline element, so with
+   `left: auto` the static position is wherever the line box
+   put it — and the button it sits in centres its text, which
+   pushed the thumb to the middle of the track.
+
+   OPAQUE on purpose: a goo filter over a translucent fill
+   thresholds the alpha away and the shape disappears. Which
+   is why the grey is a `color-mix` and not an alpha — see the
+   note where the off colour is chosen. */
+.liq-thumb {
+  position: absolute;
+  left: 0; top: 50%;
+  /* the size comes from Liquid.tsx, which also needs it for the
+     travel — one number, so the circle and the distance it
+     crosses cannot disagree */
+  width: var(--liq-thumb, 36px); height: var(--liq-thumb, 36px);
+  margin-top: calc(var(--liq-thumb, 36px) / -2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fill-on, var(--ink)) 19%, var(--fill-slab, var(--card)));
+  /* transform is Framer's — a CSS transition on the same
+     property re-interpolates every frame the spring writes,
+     and what you see is the easing, not the spring. The colour
+     is the only thing here that eases, and it is the only one
+     that can: everything else about this element is written
+     into one transform by Framer. */
+  transition: background 420ms ease;}
+
+/* ON inverts the pair: ink track, slab droplet. The two states
+   are the two ends of the fill's ramp and never two values of
+   the same one. */
+.liq-sw[data-on="true"] .liq-thumb { background: var(--fill-slab, var(--board)); }
+
+/* ── le filet de Stroke ────────────────────────────────────
+   La référence l'accrochait à douze blocs via un interrupteur
+   [data-stroke] de son atelier. Ce projet n'a pas cet
+   interrupteur ; il reste les deux blocs qui existent ici, et
+   la règle est un no-op tant que personne ne pose
+   data-stroke="on". Les autres sélecteurs (.bar-rail,
+   .fan-core, .step-pill, .deck-card, .tick-row, .nod-card,
+   .esc-btn, .slo-track, .sek-skin, .lab) visent des blocs qui
+   ne sont pas dans ce dépôt — élagués, pas recopiés.
+   [data-stroke="on"] .bal,
+   [data-stroke="on"] .liq-sw { box-shadow: 0 0 0 1px var(--pane-edge); }
+
+@media (prefers-reduced-motion: reduce) {
+  .liq-thumb { transition-duration: 160ms; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   ── tirer-pour-actualiser (components/pull-to-refresh.tsx) ──
+   Le bloc « humidity wheel » de la feuille source appartient à
+   un autre composant (il n'est pas dans cette livraison) —
+   élagué, pas recopié. */
+
+/* ══ Balance ════════════════════════════════════════════════
+   HEIGHT IS NOT DECLARED. It was 340px against content that
+   came to about 270, and the difference sat at the bottom of
+   the card as a band of empty fill — the "weird space" that a
+   fixed height always eventually becomes. The content sizes
+   the card now, so there is nothing to keep in agreement. */
+.bal {
+  position: relative;
+  box-sizing: border-box;
+  width: 300px;
+  /* mapping (voir l'en-tête ci-dessus) */
+  --card: var(--panel);
+  --ember: var(--bad);
+  --ok: var(--good);
+  --fill-on: var(--ink);
+  --fill-on-rgb: 230 234 242;
+  --fill-slab: var(--panel-2);
+  --ink-rgb: 230 234 242;
+  --pane-edge: rgba(255, 255, 255, 0.07);
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  /* la page's corner, pas celle d'une carte. Ici 18px, le rayon
+     des cartes du dashboard (`.card`), posé par le composant
+     via --bal-r ; le repli suit. */
+  border-radius: var(--bal-r, 18px);
+  background: var(--fill-slab, color-mix(in srgb, var(--fill-on, #17181a) 6%, transparent));
+  overflow: hidden;
+  font-family: var(--font-ui);
+  /* ── the card grows with the pull ─────────────────────────
+     The sheet inside slides down by --at and the card's own
+     height follows it, so the top edge stays put and the
+     bottom travels with the finger. Padding rather than a
+     scale: a scaled box drags its corner radius out of shape,
+     and the corner is what says this is still the same card.
+
+     --grow carries the rest padding as well as the growth, so
+     the rebound can spend it — the spring goes past zero on
+     the way home and the card compresses a few pixels below
+     its resting height. That is the bounce.
+
+     ── AND THE NEGATIVE MARGIN CANCELS IT IN LAYOUT ─────────
+     This is the part that matters and it is not an
+     optimisation. The wall and the overlay both measure a
+     block with a ResizeObserver and fit it by the LARGER of
+     its two sides, so a card whose real height changed during
+     a pull did three things at once: the wall re-packed its
+     column and every card below it jumped, the overlay
+     rescaled the block every frame so everything shrank while
+     the card stretched, and the pull itself became unreliable
+     — the re-render mid-gesture is what made it stop
+     responding.
+
+     Growing and un-growing by the same number leaves the
+     margin box exactly where it was. The card paints taller
+     and MEASURES the same, so nothing above it notices and
+     the block's box is a constant. It paints into the wall
+     card's own padding, which has room for it. */
+  padding-bottom: var(--grow, 8px);
+  margin-bottom: calc(-1 * var(--grow, 8px));}
+
+/* ── the indicator ─────────────────────────────────────────
+   Five droplets on one goo layer. It sits under the sheet and
+   is revealed as the sheet is pulled down off it.
+
+   --spread is the whole effect and it is one number: the
+   distance each droplet sits from the centre. Scattered at 13,
+   touching at about 2.6, and back out to 10 while it works. It
+   is set from React rather than derived in CSS because the
+   pull and the work phase reach it by different routes and a
+   calc() covering both would be a conditional written in
+   arithmetic.
+
+   The ring turns as a WHOLE while it works — the animation is
+   on this box, not on the droplets — so the DOM and the
+   silhouette rotate together and the library never has to
+   re-measure a moving rect. Thirty-odd frames a second of
+   getBoundingClientRect per droplet is the cost of the
+   obvious version. */
+.bal-goo {
+  position: absolute;
+  left: 50%;
+  /* 30, not 36. The ring has to clear the sheet's top edge at
+     the moment the pull commits, and the commit moved from 80
+     down to 58 — so the room the indicator had is 22px less
+     than it was and it has to sit that much higher. Which is
+     also the better composition: the gap between the ring and
+     the content it is holding open was generous enough to
+     read as two separate things. */
+  top: 30px;
+  width: 60px; height: 60px;
+  margin: -30px 0 0 -30px;
+  z-index: 1;
+  pointer-events: none;
+  /* the dots share one cell and are displaced out of it */
+  display: grid;
+  place-items: center;
+  /* opacity OUTSIDE the filter. The goo's alpha step erases
+     anything under half opacity, so fading the droplets
+     themselves would not fade the blob — it would eat it from
+     the edges in and then drop it whole. */
+  opacity: var(--p, 0);
+  scale: calc(0.82 + var(--p, 0) * 0.18);}
+
+.bal[data-phase="work"] .bal-goo {
+  opacity: 1;
+  scale: 1;
+  animation: bal-spin var(--rpm, 900ms) linear infinite;}
+
+/* ── one of the six ─────────────────────────────────────────
+   Tiny, and it can be: there is no filter to survive any more,
+   which is what the old 14px was sized against. Six 5px dots
+   on a 30px circle read as a spinner at a glance and as six
+   distinct marks when you look. They paint themselves now
+   rather than being a silhouette for a group to fill. */
+.bal-drop {
+  grid-area: 1 / 1;
+  width: 4px; height: 4px;
+  border-radius: 999px;
+  /* ── GREY, NOT INK ───────────────────────────────────────
+     A loading mark is the quietest thing that can be on a
+     screen and still be doing its job: it says "a moment",
+     and full ink says "look at this". A wash of the fill's own
+     ink rather than a fixed grey, so it stays a step off
+     whatever the component is made of in either direction. */
+  background: color-mix(in srgb, var(--fill-on, #17181a) 32%, transparent);
+  /* --dx/--dy are worked out in the component, from the
+     droplet's angle and the spread — see the note there on why
+     this is a translation and not a rotation. */
+  transform: translate(calc(var(--dx, 0) * 1px), calc(var(--dy, 0) * 1px));}
+
+.bal-scroll {
+  position: relative;
+  z-index: 2;
+  transform: translateY(var(--at));
+  /* ── pan-X, and the axis is the whole point ───────────────
+     `touch-action` names what the BROWSER may take, not what
+     the element wants. pan-y handed every vertical gesture to
+     the page for scrolling — which is the one gesture this
+     component exists to receive, so on a touch screen the card
+     never moved at all and there was no way to refresh it.
+
+     pan-x reserves the vertical drag for the element and
+     leaves horizontal to the browser, which is the correct
+     way round for something you pull down.
+
+     .bal-plot below is the opposite case and keeps pan-y
+     correctly: its scrub is HORIZONTAL, so the browser is
+     welcome to the vertical. The two values look
+     interchangeable and are exact opposites — which is how the
+     wrong one ends up on the wrong element. */
+  touch-action: pan-x;
+  /* opaque, or the droplets underneath show through the sheet
+     they are supposed to be hidden behind */
+  background: var(--fill-slab, var(--card));}
+
+.bal-scroll:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(var(--fill-on-rgb, var(--ink-rgb)), 0.45);
+  border-radius: var(--bal-r, 18px);}
+
+/* ── what it is refreshing ─────────────────────────────────
+   Everything is on the fill's own ink, so a dark Fill inverts
+   the whole sheet rather than leaving a light card sitting
+   inside a dark one. */
+.bal-sheet { padding: 16px 16px 8px; }
+
+.bal-sum {
+  margin: 0;
+  /* Inter, not DM Mono — with tabular figures, which is the
+     only thing the mono face was actually providing. */
+  font-size: 30px;
+  line-height: 1;
+  /* 500, not 600. At 33px a semibold balance was the loudest
+     thing on the card by some distance and read as a headline
+     rather than as a figure; the size already makes it the
+     first thing you look at. */
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: var(--fill-on, var(--ink));
+  font-variant-numeric: tabular-nums;}
+
+/* the currency and the cents are the same figure at a quieter
+   weight — a balance is one number, not three */
+/* THE MARK IS PART OF THE NUMBER. It was two thirds the size
+   at a third of the weight, which read as a footnote attached
+   to the figure rather than as the figure's own currency —
+   same size, same weight, same colour, and it is one number
+   again. */
+.bal-cur {
+  font-size: inherit;
+  font-weight: inherit;
+  margin-right: 2px;}
+
+/* the cents stay grey, and come up: at 18 against a 33px
+   figure they were a different order of information; at 24
+   they are the same number, quieter. */
+.bal-dec { font-size: 20px; opacity: 0.34; font-weight: 500; letter-spacing: -0.02em; }
+
+.bal-move {
+  /* tabular here above all: this line is rewritten on every
+     step of a scrub, and proportional figures would make the
+     row twitch under the pointer */
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 9px 0 0;
+  /* 12.5, up from 11.5. It carries the change AND the day —
+     the two things you read after the balance itself — and at
+     11.5 under a 33px figure it was sized like a caption on a
+     line that is doing more work than that. */
+  font-size: 12px;
+  font-weight: 400;
+  color: color-mix(in srgb, var(--fill-on, #17181a) 52%, var(--fill-slab, #ffffff));
+  letter-spacing: 0em;}
+
+.bal-move[data-up="true"] { color: var(--ok); }
+
+.bal-move[data-up="false"] { color: var(--ember); }
+
+/* the word, or the time — always the quiet half of the line,
+   whichever it currently is */
+.bal-when {
+  color: color-mix(in srgb, var(--fill-on, #17181a) 32%, var(--fill-slab, #ffffff));
+  font-variant-numeric: tabular-nums;}
+
+/* ── the line ───────────────────────────────────────────────
+   A curve through the readings with a wash under it. The wash
+   is what stops it reading as a wireframe: a stroke alone on a
+   card is a diagram, a stroke over a fade is a chart.
+
+   GREEN, because the reading it draws is. The figure above it
+   is already --ok when the day is up, and a black line under
+   two green numbers is the one element on the card not
+   participating in what it is about.
+
+   `color` is set on the wrapper so the gradient's
+   currentColor, the stroke, the guide and the dot all agree
+   without any of them naming a value. */
+.bal-plot {
+  position: relative;
+  display: block;
+  margin: 22px 0 6px;
+  /* the grab area is the plot, and it is worth more than the
+     line is tall — a 3px-high hit target for a scrub is a
+     scrub nobody finds.
+
+     It is a VARIABLE because two other things have to know
+     it. The plot is the containing block for the dot and the
+     guide, so a percentage inside it resolves against a box
+     that is 12px taller than the chart — and both of them are
+     placing themselves against the CHART. Written out three
+     times these drift; written once they cannot. */
+  --pad-y: 6px;
+  padding: var(--pad-y) 0;
+  /* ── BRIGHTER THAN THE NUMBER, on purpose ───────────────
+     --ok is a TEXT green: #15803d is chosen to read at 11.5px
+     on white, which makes it deep and, drawn as a 1.7px
+     stroke, muddy — a thin line of a dark colour always looks
+     darker than a block of it, so the chart came out dull
+     against the two green figures above it.
+
+     So the plot takes a green of its own, the same hue with
+     the saturation a stroke needs. Not a second colour: the
+     pair reads as one green because at these two sizes it
+     does — brightening the line is what makes it MATCH the
+     number optically rather than only in the stylesheet.
+
+     ICI : la teinte vive « pour trait » du projet est
+     --good (#34d399), déjà choisie pour ça — les hexes de la
+     référence deviennent le jeton du projet, les doublons
+     [data-theme="dark"] restent mais ne disent plus rien de
+     neuf. */
+  --line: var(--good);
+  color: var(--line);
+  cursor: crosshair;
+  touch-action: pan-y;}
+
+[data-theme="dark"] .bal-plot { --line: var(--good); }
+
+/* and the same argument the other way for a fall */
+.bal-plot[data-up="false"] { --line: var(--bad); color: var(--line); }
+
+[data-theme="dark"] .bal-plot[data-up="false"] { --line: var(--bad); }
+
+.bal-line {
+  display: block;
+  width: 100%;
+  /* the chart is the thing you scrub, so it is the thing that
+     should have got the room — 62px of curve under a 33px
+     number was a footnote to it */
+  height: 92px;
+  overflow: visible;}
+
+.bal-curve {
+  fill: none;
+  stroke: currentColor;
+  /* 2.1, up from 1.7. The same argument as the colour above it
+     — a thin stroke gives a hue less to be read from, so the
+     line was paying twice for being fine. A quarter more
+     weight is enough to carry the green without the curve
+     starting to read as a shape rather than a reading. */
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* WITHOUT THIS the stroke stretches with the viewBox, and a
+     100-unit box mapped across 320px of card draws a rope
+     along one axis and a hairline along the other. */
+  vector-effect: non-scaling-stroke;}
+
+/* ── reading the day back ───────────────────────────────────
+   The guide only exists while you are on the plot. A
+   permanent vertical rule is a second axis nobody asked for,
+   and it would be pointing at "now", which the dot already
+   marks. */
+.bal-guide {
+  position: absolute;
+  top: var(--pad-y, 6px); bottom: var(--pad-y, 6px);
+  width: 1px;
+  margin-left: -0.5px;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;}
+
+.bal-plot[data-scrub] .bal-guide { opacity: 0.28; }
+
+/* The mark on the reading, outside the stretched svg. Its
+   position comes from the same points the path was built
+   from, so it is ON the curve rather than near it.
+
+   It does NOT transition its position. A dot that eases toward
+   the pointer is a dot that is wrong for 140ms at every step,
+   and the whole claim of a scrub is that the number and the
+   place agree. Only the size changes on a timer. */
+/* ── the dot sits on the CHART, not on the plot ─────────────
+   `--tip` is where the reading is down the chart, 0 at the top
+   and 1 at the bottom, and it has to be resolved against the
+   chart's own height. A plain `top: %` resolves against the
+   containing block — the plot, which is 12px taller because of
+   its own grab padding — so the dot landed 6px high at the top
+   of the range, 6px low at the bottom, and exactly right in
+   the middle. Measured before the fix: 5.99px below the line's
+   end point. Correct in the middle is the worst kind of wrong,
+   because it looks like a rounding error rather than a
+   mistake.
+
+   The guide above it was always right; it is placed from both
+   edges rather than by a fraction, so it never had to know. */
+.bal-tip {
+  position: absolute;
+  top: calc(var(--pad-y, 6px) + (100% - 2 * var(--pad-y, 6px)) * var(--tip, 0));
+  width: 9px; height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 999px;
+  background: var(--fill-slab, var(--bg));
+  box-shadow: 0 0 0 2px currentColor;
+  pointer-events: none;
+  transition: scale 160ms cubic-bezier(0.24, 1.34, 0.38, 1);}
+
+.bal-plot[data-scrub] .bal-tip { scale: 1.18; }
+
+/* ── the window ─────────────────────────────────────────────
+   Three small pills where two holdings cards used to be. Light
+   on purpose: the chart above is the subject, and what sits
+   under it should be a control rather than a second reading
+   competing with the first. */
+.bal-win {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  margin: 16px 0 0;}
+
+/* One tab wide, and one tab plus a gap per step across. The
+   percentage in translateX is of the PILL's own width, which
+   is the tab width — so the sum is exact at any card scale and
+   nothing has to be measured. */
+.bal-win-pill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: calc((100% - (var(--win-n, 3) - 1) * 4px) / var(--win-n, 3));
+  border-radius: var(--bal-tab-r, 999px);
+  background: color-mix(in srgb, var(--fill-on, #17181a) 6%, transparent);
+  transform: translateX(calc(var(--win, 0) * (100% + 4px)));
+  /* A bounce you feel rather than watch. The overshoot is
+     still the point — it is what separates a thing being MOVED
+     from a thing being switched — but 1.48 on the second
+     control point threw it 13px past a 78px tab, which is a
+     sixth of the travel arriving after the pill had already
+     got there. 1.16 puts that in the low single figures, and
+     the shorter duration keeps the whole move under the time
+     it takes to look at it. */
+  transition: transform 420ms cubic-bezier(0.24, 1.34, 0.38, 1);}
+
+.bal-win-btn {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  /* 32 and 12.5px, up from 28 and 11.5 — the row read as a
+     footnote under the chart rather than as the control it is */
+  height: 32px;
+  border: 0;
+  /* the card's corner, scaled down and capped at half the
+     tab's height — see the note in Elastic.tsx */
+  border-radius: var(--bal-tab-r, 999px);
+  background: none;
+  color: color-mix(in srgb, var(--fill-on, #17181a) 52%, var(--fill-slab, #ffffff));
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0em;
+  cursor: pointer;
+  /* the label lands before the pill does, so the word you
+     pressed is the one that reads first */
+  transition: color 220ms ease, transform 220ms cubic-bezier(0.24, 1.34, 0.38, 1);}
+
+.bal-win-btn:hover { color: var(--fill-on, var(--ink)); }
+
+.bal-win-btn:active { transform: scale(0.96); }
+
+/* the pad is the pill's now — this only carries the ink */
+.bal-win-btn[data-on] { color: var(--fill-on, var(--ink)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bal[data-phase="work"] .bal-goo { animation-duration: 3s; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bal-tip, .bal-guide, .bal-win-pill { transition-duration: 160ms; }
+}
+
+@keyframes bal-spin { to { rotate: 360deg; } }
+
+/* ════════════════════════════════════════════════════════════
+   ── balle à traîner (components/dragging-ball.tsx) ───────── */
+
+/* ══ Dragging ball ══════════════════════════════════════════
+   One circle and its tail. The well is a plain box: the ball
+   is centred in it by the grid and moved from there by
+   framer's drag, so the constraint numbers in the component
+   are distances from the middle and nothing has to be
+   measured — which matters, because every card here is drawn
+   at a fraction and a measured rect would be scaled. */
+.drg-well {
+  position: relative;
+  display: grid;
+  place-items: center;
+  /* mapping (voir l'en-tête ci-dessus) — avec UNE exception
+     documentée : le composant veut un « gris surélevé » sous
+     un thème sombre. --panel-2 sur le verre de `.card` donne
+     1,05:1 — le disque s'y noie, exactement le piège que le
+     commentaire du composant raconte (« the ink version was a
+     near-black disc that vanished on a near-black card »).
+     Le gris surélevé est donc mélangé ici : la même teinte,
+     soulevée de 14 % d'encre pour rester un objet posé SUR le
+     verre plutôt que peint dedans. */
+  --fill-slab: color-mix(in srgb, var(--ink) 14%, var(--panel-2));
+  --board: var(--bg);}
+
+/* undo the library's double-applied scale — see Gooey.tsx.
+   `move` measures screen pixels, so the layer it draws into
+   has to be brought back to layout ones. */
+.drg-goo > svg {
+  transform: scale(calc(1 / var(--k, 1)));
+  transform-origin: 0 0;}
+
+.drg-goo {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;}
+
+/* NO BACKGROUND. <Liquid> paints the merged silhouette behind
+   it, and a fill here would lay a hard circle on top of the
+   liquid edge exactly where the tail is trying to leave it. */
+.drg-ball {
+  grid-area: 1 / 1;
+  border-radius: 999px;
+  cursor: grab;
+  touch-action: none;
+  will-change: transform;}
+
+.drg-ball:active { cursor: grabbing; }
+
+/* ════════════════════════════════════════════════════════════
+   ── dock de navigation (components/magnifying-dock.tsx) ──── */
+
+/* ── glass navigation ──────────────────────────────────────
+   Same recipe as the project's own `.card`: the same glass
+   fill, the same 18px frost, the same hairline. Shapes differ,
+   the material does not.
+
+   ICI : la feuille source commutait ce matériau entre verre
+   et plat via [data-surface], et son filet via [data-stroke] —
+   l'infrastructure d'un atelier qui a ces deux interrupteurs.
+   Ce projet n'en a pas : son verre EST du verre, partout,
+   avec la recette de `.card`. La commutation est donc
+   supprimée et le matériau est posé tel quel — les jetons
+   --g-* sont mappés sur les valeurs de `.card` plutôt que
+   définis comme des nouveaux globaux. */
+.gpane, .gnav, .gdock {
+  position: relative;
+  background: var(--pane);
+  -webkit-backdrop-filter:
+    blur(var(--g-blur, 2px)) saturate(var(--g-sat, 150%)) brightness(var(--g-bright, 100%));
+  backdrop-filter:
+    blur(var(--g-blur, 2px)) saturate(var(--g-sat, 150%)) brightness(var(--g-bright, 100%));
+  isolation: isolate;
+  color: var(--ink);}
+
+.gpane::before, .gnav::before, .gdock::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /* le filet du projet — le même que `.card` (le bloc
+     [data-stroke] de la source le posait conditionnellement ;
+     ici il est inconditionnel, comme partout sur le site) */
+  border: 1px solid var(--pane-edge);
+  pointer-events: none;
+  z-index: 3;}
+
+/* dock */
+.gdock {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 28px;
+  /* mapping (voir l'en-tête ci-dessus) */
+  --pane: rgba(15, 18, 24, 0.62);
+  --pane-edge: rgba(255, 255, 255, 0.07);
+  --g-blur: 18px;
+  --g-sat: 140%;
+  --g-bright: 100%;
+  --g-edge-hi: 0.14;
+  --g-edge-lo: 0.03;
+  --g-edge-far: 0.07;
+  --g-spec: 0.06;
+  --g-lift: 0.4;
+  --shadow-rgb: 0 0 0;
+  --fill-on: var(--ink);
+  --fill-slab: var(--bg);
+  --on-ink: var(--bg);
+  --ink-rgb: 230 234 242;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  /* sideways is the dock's, up and down stays the page's — a
+     finger passing over this on the way down the wall is
+     scrolling, not picking. See .tick-row. */
+  touch-action: pan-y;}
+
+/* ── the rim, du verre du projet ────────────────────────────
+   La source posait ce dégradé derrière [data-surface="glass"]
+   avec un argument que ce projet reprend tel quel : un bord
+   plat est le signe d'un rectangle encadré, un bord éclairé de
+   façon inégale est celui d'une vitre avec de l'épaisseur.
+   Sans l'interrupteur, la règle s'applique directement — les
+   deux masques qui poinçonnent le padding-box sont la seule
+   façon de mettre un dégradé dans une bordure sans un
+   deuxième élément. */
+.gpane::before, .gnav::before, .gdock::before {
+  background:
+    linear-gradient(
+      142deg,
+      rgba(255, 255, 255, var(--g-edge-hi, 0)) 0%,
+      rgba(255, 255, 255, var(--g-edge-lo, 0)) 26%,
+      rgba(255, 255, 255, var(--g-edge-lo, 0)) 62%,
+      rgba(255, 255, 255, var(--g-edge-far, 0)) 100%
+    ) border-box;
+  -webkit-mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;}
+
+/* ── thickness ───────────────────────────────────────────────
+   Three marks, and between them they are the difference
+   between a pane and a wash.
+
+   The lit line along the top is where light enters the edge of
+   a real sheet. The ring is the sheet's own thickness seen
+   from straight on. The shadow underneath says the pane is
+   ABOVE the page rather than painted onto it — which is the
+   one thing a backdrop-filter alone can never say, because a
+   filter has no depth. */
+.gpane, .gnav, .gdock {
+  box-shadow: var(--g-shadow,
+    /* the top face, catching light through the thickness of
+       the pane — inside the rim, not on it */
+    inset 0 1px 0 rgba(255, 255, 255, var(--g-spec, 0)),
+    /* And what it casts on the page below — wide and soft
+       rather than tight and close. It is a different claim
+       about how far the pane floats, and the softer one is
+       what reads as a sheet resting above the page instead of
+       a card stuck to it. */
+    0 10px 40px rgba(var(--shadow-rgb), var(--g-lift, 0)));}
+
+/* no tile behind the icon: scaling a translucent rectangle over
+   glass is what made this look cheap. The glyph scales instead,
+   and SVG scales cleanly at any size. */
+.gdock-item {
+  position: relative;
+  width: 44px; height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  opacity: 0.42;
+  display: grid; place-items: center;
+  cursor: pointer;
+  transition: opacity 220ms ease;}
+
+/* the magnification lives here, so the dot and the label keep
+   their own size and their own distance from the bar */
+.gdock-glyph {
+  display: grid; place-items: center;
+  transform-origin: center bottom;
+  transition: transform 420ms cubic-bezier(0.24, 1.34, 0.38, 1);}
+
+.gdock-item[data-near="1"] { opacity: 0.66; }
+
+.gdock-item[data-near="0"] { opacity: 1; }
+
+.gdock-item[data-active="true"] { opacity: 1; }
+
+.gdock-item:focus-visible { outline: 1.5px solid var(--ink); outline-offset: 3px; border-radius: 10px; }
+
+/* the running dot, the only persistent mark in the dock */
+.gdock-dot {
+  position: absolute;
+  /* inside the item, not slung underneath it. The glyph is
+     20px in a 44px box, so anything hung off the bottom edge
+     lands 17px from the mark it belongs to. */
+  left: 50%; bottom: 3px;
+  width: 3px; height: 3px;
+  margin-left: -1.5px;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 220ms ease, transform 420ms cubic-bezier(0.24, 1.34, 0.38, 1);}
+
+.gdock-dot[data-on="true"] { opacity: 0.55; transform: scale(1); }
+
+/* ONE tip for the whole dock (after transitions.dev's avatar
+   tooltip): a dark pill above the bar that slides to the icon under
+   the pointer and grows or shrinks to the word, both on the same
+   160ms curve, and fades in 120ms. The word is centred in a box
+   whose width animates, and the box clips it, so a longer word is
+   uncovered rather than squeezed. */
+.gdock-tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--fill-on, var(--ink));
+  color: var(--fill-slab, var(--on-ink));
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 32px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition:
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  letter-spacing: 0em;}
+
+.gdock-tip > span { flex: none; }
+
+.gdock-tip:not([data-ready]) { transition: opacity 160ms cubic-bezier(0.22, 1, 0.36, 1); }
+
+.gdock-tip[data-on="true"] { opacity: 1; }
+
+/* ════════════════════════════════════════════════════════════
+   ── eye-tracker (components/eye-tracker.tsx) ────────────────
+   Mapping (voir l'en-tête général en haut de ce fichier) :
+      --fill-slab : la dalle du corps → la dalle surélevée, la
+                    même recette que la balle du DraggingBall
+                    (une pointe de --ink dans --panel-2) pour
+                    lire sur le verre de `.card`
+      --fill-on   : les yeux → --ink (l'encre du projet sur la dalle)
+      --card      : repli du caret de la bulle → --panel
+      --font-ui   : la pile sans-serif du corps (globals.css `body`)
+      --ink       : déjà un token global du projet — rien à poser
+      --bg        : ne servait qu'aux règles `.logo-test` et
+                    `[data-theme="dark"]` ci-dessous, qui étaient
+                    du chrome du site de la référence (le test de
+                    logo, le thème du site) — élagué, pas recopié :
+                    le dashboard n'a ni mur de logo ni thème clair
+                    à équilibrer. Les règles `.bench-lock-face`
+                    (le cadenas de la page d'accueil de la
+                    référence) partent pour la même raison. */
+
+/* ══ Eye tracker ═══════════════════════════════════════════
+   See lab/Watcher.tsx. The frame holds the largest ball the
+   Size knob allows, so the wall never rescales it. */
+.eyt {
+  width: 200px;
+  height: 200px;
+  display: grid;
+  place-items: center;
+  /* mapping — posé ici, jamais en global (voir l'en-tête) */
+  --fill-slab: color-mix(in srgb, var(--ink) 10%, var(--panel-2));
+  --fill-on: var(--ink);
+  --card: var(--panel);
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;}
+
+.eyt-ball {
+  width: var(--eyt-size, 100px);
+  height: var(--eyt-size, 100px);
+  overflow: visible;}
+
+/* the ball is the Fill's own slab and the eyes its ink: white
+   with dark eyes on a light fill, near-black with light eyes on
+   a dark one */
+.eyt-body { fill: var(--fill-slab, #ffffff); }
+
+.eyt-eye { fill: var(--fill-on, #0b0b0d); }
+
+/* a press on the toy opens a chat bubble off its lower right: the
+   pet's bubble, its square corner pointing back at the face */
+.eyt { position: relative; }
+
+/* a press gives a little under the finger and springs back out */
+.eyt-ball[data-poke] {
+  cursor: pointer;
+  transform-origin: center;
+  transition: scale 420ms cubic-bezier(0.24, 1.34, 0.38, 1);
+  -webkit-tap-highlight-color: transparent;}
+
+.eyt-ball[data-poke]:active { scale: 0.96; transition-duration: 160ms; transition-timing-function: ease; }
+
+.eyt-say {
+  position: absolute;
+  left: calc(50% + var(--eyt-size, 100px) * 0.36);
+  top: calc(50% + var(--eyt-size, 100px) * 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 34px;
+  padding: 0 16px;
+  border-radius: 6px 14px 14px 14px;
+  background: var(--tint, #3b5bff);
+  box-shadow: inset 0 -1.5px 0 rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+  transform-origin: top left;
+  opacity: 0;
+  scale: 0.85;
+  pointer-events: none;
+  transition: opacity 160ms ease, scale 220ms cubic-bezier(0.24, 1.34, 0.38, 1), background-color 220ms ease;
+  letter-spacing: 0em;}
+
+.eyt-say[data-on] { opacity: 1; scale: 1; }
+
+.eyt-caret {
+  width: 1.5px;
+  height: 13px;
+  border-radius: 1px;
+  background: var(--fill-slab, var(--card));
+  animation: pet-caret 1s steps(1) infinite;}
+
+@keyframes pet-caret {
+  50% { opacity: 0; }}
+
+/* ════════════════════════════════════════════════════════════
+   ── passe accessibilité des six études Bencho ──────────────
+   Deux filets, posés ici une seule fois pour les six composants :
+
+   1. Clavier. La référence pilotait tout au pointeur ; le
+      toggle (`role="switch"`), le portefeuille (`Entrée`
+      actualise), le dock (de vrais `<button>`) avaient déjà
+      leur geste clavier. Ajoutés côté composants : la balle du
+      DraggingBall se déplace aux flèches (les mêmes motion
+      values que le drag — un seul corps, pas deux), la balle
+      de l'EyeTracker répond à Entrée/Espace.
+
+   2. `prefers-reduced-motion`. Chaque composant gère son
+      ressort en JS (EyeTracker : `stillness()` fige le
+      ressort ; ToastStack : `useReducedMotion`). Ce filet CSS
+      couvre ce que le JS ne voit pas : les transitions
+      décoratives — l'aimantation du dock, le gonflement de la
+      balle, le clignement — s'arrêtent net au lieu de
+      s'exécuter en silence. Durée 1ms et pas `none` : les
+      états finaux (opacité d'un toast ouvert, position du
+      caret) restent corrects sans attendre une transition.
+      Seule `pet-caret` est tuée franchement : un caret qui
+      clignote est du bruit, pas un état. */
+@media (prefers-reduced-motion: reduce) {
+  .tst *, .liq-well *, .bal *, .drg-well *, .gdock *, .eyt-ball {
+    transition-duration: 1ms !important;
+    animation: none !important;
+  }
+}
+
+/* la prise de focus des deux jouets à balle : le contour global
+   `:focus-visible` existe déjà (voir plus haut) mais ces deux-là
+   sont des SVG/span ronds — un rectangle aux angles droits sur
+   un cercle lit comme un bug, donc le leur suit la forme */
+.drg-well:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: 18px;}
+
+.eyt-ball:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: 50%;}
