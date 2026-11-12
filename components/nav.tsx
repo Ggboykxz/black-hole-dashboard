@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useLiveFeed } from "./live-provider";
+import { SignalAge } from "./live-clock";
 
 export const LINKS = [
   { href: "/", label: "Synthèse", icon: "◈" },
@@ -20,28 +21,19 @@ export const LINKS = [
   { href: "/journal", label: "Journal", icon: "☰" },
 ];
 
+/**
+ * The rail's navigation.
+ *
+ * It used to poll `/api/live` on its own (every 5 s) only to print a UTC
+ * timestamp under "rafraîchir" — a third request, a third clock. It now reads
+ * the shared feed: the live dot follows the *state* of the signal (not a
+ * hard-coded green), and the timestamp is the one the feed actually received.
+ */
 export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
-  const [at, setAt] = useState<string | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    const tick = () => {
-      fetch("/api/live", { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => {
-          if (alive && d?.updated_at) setAt(d.updated_at);
-        })
-        .catch(() => {});
-    };
-    void tick();
-    const t = window.setInterval(tick, 5000);
-    return () => {
-      alive = false;
-      window.clearInterval(t);
-    };
-  }, []);
+  const feed = useLiveFeed();
+  const { live, meta, state } = feed;
 
   return (
     <nav className="flex flex-col gap-1">
@@ -52,12 +44,15 @@ export default function Nav() {
           <Link
             key={l.href}
             href={l.href}
-            className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[12.5px] transition-all duration-150 ${
+            className={`group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[12.5px] transition-all duration-150 ${
               active
                 ? "bg-accent/10 text-ink shadow-[inset_0_0_0_1px_rgba(56,189,248,0.22)]"
                 : "text-dim hover:bg-white/[0.035] hover:text-ink"
             }`}
           >
+            {active ? (
+              <span className="absolute inset-y-2 left-0 w-[2px] rounded-full bg-accent shadow-[0_0_8px_#38bdf8]" />
+            ) : null}
             <span
               className={`w-4 text-center text-[11px] transition-transform duration-150 group-hover:scale-110 ${
                 active ? "text-accent" : "text-faint"
@@ -66,7 +61,13 @@ export default function Nav() {
               {l.icon}
             </span>
             {l.label}
-            {l.href === "/live" ? <span className="pulse ml-auto" /> : null}
+            {l.href === "/live" ? (
+              <span
+                className={`pulse ml-auto ${state === "live" ? "" : "pulse-static"}`}
+                style={{ ["--pulse-color" as string]: meta.color }}
+                title={meta.label}
+              />
+            ) : null}
           </Link>
         );
       })}
@@ -77,11 +78,16 @@ export default function Nav() {
         <span>⟳</span>
         <span>
           rafraîchir
-          {at ? (
-            <span className="num block text-[9.5px] opacity-70">
-              {at.slice(11, 19)} UTC
-            </span>
-          ) : null}
+          <span className="num block text-[9.5px] opacity-70">
+            {live?.updated_at ? (
+              <>
+                {live.updated_at.slice(11, 19)} UTC ·{" "}
+                <SignalAge updatedAt={live.updated_at} />
+              </>
+            ) : (
+              "en attente du signal"
+            )}
+          </span>
         </span>
       </button>
     </nav>

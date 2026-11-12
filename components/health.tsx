@@ -5,7 +5,8 @@ import type { Snapshot } from "@/lib/types";
 import { buildHealth, type Health } from "@/lib/health";
 import { Meter } from "@/components/base/meter/meter";
 import { useLiveFeed } from "./live-provider";
-import { humanAge } from "@/lib/signal";
+import { SignalAge } from "./live-clock";
+import { humanAge, preciseAge, shortUTC } from "@/lib/signal";
 
 const TONE: Record<string, { bg: string; text: string; border: string }> = {
   ok: { bg: "bg-good/10", text: "text-good", border: "border-good/40" },

@@ -9,7 +9,7 @@ import { useHydratedClock } from "@/lib/use-mounted";
 import { describeChange } from "@/lib/changes";
 import { duration, f2, f4, hours, int, pct, step as fmtStep } from "@/lib/format";
 import { ageOf } from "@/lib/live-store";
-import { freshness, humanAge, STALE_AFTER_S } from "@/lib/signal";
+import { freshness, humanAge, preciseAge, STALE_AFTER_S } from "@/lib/signal";
 
 interface Props {
   /** the snapshot's tail, so the chart is populated before the first poll */
@@ -230,7 +230,14 @@ export default function LivePanel({
                 className="chip"
                 title="âge du heartbeat, calculé depuis son updated_at"
               >
-                signal : {humanAge(age)}
+                signal : <span className="num text-ink">{preciseAge(age)}</span>
+              </span>
+              <span
+                className="chip !px-2 !text-[9.5px]"
+                title="cadence du réseau et dernier aller-retour mesuré"
+              >
+                poll {feed.pollMs / 1000} s ·{" "}
+                {feed.latencyMs === null ? "— ms" : `${feed.latencyMs} ms`}
               </span>
               {feed.restored ? (
                 <span className="chip" title="points restaurés depuis localStorage">
@@ -260,7 +267,8 @@ export default function LivePanel({
               <div className="flex items-center justify-between font-mono text-[9.5px] text-faint">
                 <span>fraîcheur du producteur</span>
                 <span style={{ color: meta.color }}>
-                  {Math.round(fresh * 100)} % · seuil {STALE_AFTER_S} s
+                  {Math.round(fresh * 100)} % · {preciseAge(age)} · seuil{" "}
+                  {STALE_AFTER_S} s
                 </span>
               </div>
               <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-white/[0.05]">

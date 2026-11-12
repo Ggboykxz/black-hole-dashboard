@@ -28,6 +28,7 @@ import { diffSamples, type Change } from "@/lib/changes";
 import { SPECS, isNum } from "@/lib/metrics";
 import {
   freshness,
+  POLL_MS,
   SIGNAL_META,
   signalState,
   type SignalMeta,
@@ -92,6 +93,14 @@ export interface LiveFeed {
   age: number | null;
   /** 0..1 — how fresh the signal is, 1 = just written */
   fresh: number;
+  /** last measured round-trip of `/api/live`, in ms (null before the first success) */
+  latencyMs: number | null;
+  /** local clock of the last completed poll */
+  lastPollAt: number | null;
+  /** how many polls have completed since the page opened */
+  pollCount: number;
+  /** the network cadence, in ms — displayed next to the latency */
+  pollMs: number;
   /** the exact reason of the last failure */
   error: string | null;
   /** has a poll ever completed (success or failure)? */
@@ -154,6 +163,9 @@ export function LiveProvider({
   const [samples, setSamples] = useState<MetricSample[]>([]);
   const [changes, setChanges] = useState<Change[]>([]);
   const [age, setAge] = useState<number | null>(null);
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [lastPollAt, setLastPollAt] = useState<number | null>(null);
+  const [pollCount, setPollCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [attempted, setAttempted] = useState(false);
   const [restored, setRestored] = useState(false);
@@ -206,6 +218,7 @@ export function LiveProvider({
       /* en pause : rien ne part, rien n'est stocké — la page reste
          figée sur ce qu'elle montre, et le réseau respire */
       if (pausedRef.current) return;
+      const started = performance.now();
       try {
         const res = await fetch("/api/live", { cache: "no-store" });
         if (!res.ok) {
@@ -225,6 +238,9 @@ export function LiveProvider({
         setLive(data);
         setVerified(true);
         setError(null);
+        /* the round-trip is measured, not guessed: fetch + JSON decode, the
+           same cost the browser paid to get this payload on screen */
+        setLatencyMs(Math.max(1, Math.round(performance.now() - started)));
 
         const hist = (data.gpu_history ?? []) as {
           t: string;
@@ -296,15 +312,27 @@ export function LiveProvider({
           setError(e instanceof Error ? e.message : "requête échouée");
         }
       } finally {
-        if (alive) setAttempted(true);
+        if (alive) {
+          setAttempted(true);
+          setLastPollAt(Date.now());
+          setPollCount((n) => n + 1);
+        }
       }
     };
 
-    void poll();
-    const t = window.setInterval(poll, POLL_MS);
+    /* A recursive timeout, not setInterval: if one request takes longer than
+       the cadence (a cold GPU query, a slow Hub), the next one waits for it.
+       Overlapping polls would race each other and let an older payload land
+       after a newer one. */
+    let timer = 0;
+    const loop = async () => {
+      await poll();
+      if (alive) timer = window.setTimeout(loop, POLL_MS);
+    };
+    void loop();
     return () => {
       alive = false;
-      window.clearInterval(t);
+      window.clearTimeout(timer);
     };
   }, []);
 
@@ -373,6 +401,10 @@ export function LiveProvider({
       meta: SIGNAL_META[state],
       age,
       fresh: freshness(age),
+      latencyMs,
+      lastPollAt,
+      pollCount,
+      pollMs: POLL_MS,
       error,
       attempted,
       verified,
@@ -395,6 +427,9 @@ export function LiveProvider({
       source,
       state,
       age,
+      latencyMs,
+      lastPollAt,
+      pollCount,
       error,
       attempted,
       verified,

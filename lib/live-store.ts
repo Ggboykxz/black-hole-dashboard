@@ -167,12 +167,19 @@ export function writeHintDismissed(): void {
   }
 }
 
-/** Seconds since an ISO timestamp, or null when it cannot be parsed. */
+/**
+ * Seconds since an ISO timestamp, or null when it cannot be parsed.
+ *
+ * Fractional on purpose: the feed ticks its shared age once a second, but the
+ * header computes its own age from the same `updated_at` at ~10 Hz and needs
+ * the real value, not an already-rounded one. Display helpers round, never
+ * this function — the state thresholds must see the actual age.
+ */
 export function ageOf(iso: string | undefined | null): number | null {
   if (!iso) return null;
   const t = new Date(iso).getTime();
   if (!Number.isFinite(t)) return null;
-  return Math.max(0, Math.round((Date.now() - t) / 1000));
+  return Math.max(0, (Date.now() - t) / 1000);
 }
 
 /** Dedupe by step, keep the newest value, sort ascending, cap the tail. */

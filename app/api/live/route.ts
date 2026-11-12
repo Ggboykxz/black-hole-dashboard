@@ -64,7 +64,18 @@ function tailRows(file: string, max = 20): Record<string, number | null>[] {
   return rows.reverse().slice(-max);
 }
 
-function gpuState() {
+/**
+ * The system probes are expensive: `nvidia-smi` and `ps` are two processes,
+ * and the dashboard may run on the trainer's own 2-vCPU box. The live feed
+ * polls once a second so the UI can feel immediate, but the *hardware* state
+ * does not change meaningfully in one second — cache the probes for 2 s and
+ * keep reading the log tail on every request (it is a 64 KiB read).
+ */
+const PROBE_TTL_MS = 2000;
+let gpuCache: { at: number; value: ReturnType<typeof probeGpu> } | null = null;
+let procCache: { at: number; value: ReturnType<typeof probeProcesses> } | null = null;
+
+function probeGpu() {
   try {
     const out = execFileSync(
       "nvidia-smi",
@@ -95,7 +106,15 @@ function gpuState() {
   }
 }
 
-function processState() {
+function gpuState() {
+  const now = Date.now();
+  if (gpuCache && now - gpuCache.at < PROBE_TTL_MS) return gpuCache.value;
+  const value = probeGpu();
+  gpuCache = { at: now, value };
+  return value;
+}
+
+function probeProcesses() {
   try {
     const out = execFileSync("ps", ["-eo", "pid,ppid,etimes,rss,args"], {
       timeout: 4000,
@@ -154,6 +173,14 @@ function processState() {
   } catch {
     return undefined;
   }
+}
+
+function processState() {
+  const now = Date.now();
+  if (procCache && now - procCache.at < PROBE_TTL_MS) return procCache.value;
+  const value = probeProcesses();
+  procCache = { at: now, value };
+  return value;
 }
 
 function localLive(): Live | null {

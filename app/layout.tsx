@@ -20,9 +20,6 @@ import Palette from "@/components/palette";
 import PaletteTrigger from "@/components/palette-trigger";
 import { MagnifyingDock } from "@/components/magnifying-dock";
 import { ToastStack } from "@/components/toast-stack";
-import { EyeTracker } from "@/components/eye-tracker";
-import { DraggingBall } from "@/components/dragging-ball";
-import { PullToRefresh } from "@/components/pull-to-refresh";
 import { getSnapshot } from "@/lib/snapshot";
 
 /* la fonte de BoardUI (typography.css lit --font-inter) — le reste du
@@ -64,6 +61,18 @@ export default async function RootLayout({
   const { snapshot } = await getSnapshot();
   const s = snapshot.status;
   const lastBench = snapshot.benchmarks[snapshot.benchmarks.length - 1];
+  /* the server does not know the live step yet. It hands the embedded
+     snapshot to the header as a *fallback*, never as a live value: the
+     header keeps the "CONNEXION…" state until the first poll answers,
+     and then replaces every number with the producer's own. */
+  const initial = {
+    step: s.step,
+    max_steps: s.max_steps,
+    train_loss: s.train_loss,
+    lr: s.lr,
+    val_loss: s.val_last?.loss ?? null,
+    tokens_per_s: s.tokens_per_s,
+  };
 
   return (
     <html lang="fr" className={`dark ${inter.variable}`}>
@@ -114,6 +123,7 @@ export default async function RootLayout({
                   bench={
                     lastBench ? { loss: lastBench.loss, step: lastBench.step } : null
                   }
+                  initial={initial}
                 />
               </div>
               <div className="flex shrink-0 items-center gap-3 pr-4 md:pr-7">
@@ -131,60 +141,36 @@ export default async function RootLayout({
               {children}
             </main>
 
-            <footer className="px-4 pb-24 pt-4 text-[10.5px] text-faint md:px-7 md:pb-8">
-              <p>
-                Black Hole — le dashboard lit les mêmes artefacts que la
-                documentation ({" "}
-                <code className="text-accent">runs/benchmarks.jsonl</code>,{" "}
-                <code className="text-accent">runs/bh-005/log.jsonl</code>,{" "}
-                <code className="text-accent">docs/METRICS.md</code>) ; il ne
-                calcule rien de plus.{" "}
-                <Link href="/journal" className="text-accent underline underline-offset-2">
-                  journal
-                </Link>
-              </p>
-
-              {/* ── l'atelier du pied de page ───────────────────────
-                 Les trois études Bencho qui n'ont pas de fonction à
-                 tenir (la nav est le dock, la pause est le toggle du
-                 header) vivent ici, sur TOUTES les pages : le
-                 gardien veille sans jamais vous regarder faire,
-                 la balle se traîne, le portefeuille cède et
-                 rebondit. C'est la signature du site, pas une
-                 vitrine séparée quelque part.
-
-                 Chaque étude dans sa tuile de verre : à même le
-                 fond du footer, leurs pleins sombres disparaissaient
-                 — la capture d'écran montrait un footer vide. La
-                 tuile leur rend une surface, la légende dit quoi
-                 faire ; PullToRefresh est ramené à 0,6 (il fait
-                 300px d'étude, le footer n'est pas un labo). */}
-              <div className="mt-4 flex flex-wrap items-stretch justify-center gap-3 border-t border-line pt-4">
-                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                  <EyeTracker idle size={64} />
-                  <figcaption className="text-center font-mono text-[10px] leading-relaxed text-dim">
-                    elle regarde ailleurs<br />de temps en temps
-                  </figcaption>
-                </figure>
-                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                  <DraggingBall size={48} />
-                  <figcaption className="text-center font-mono text-[10px] leading-relaxed text-dim">
-                    traînez-la, lâchez-la —<br />elle garde son élan
-                  </figcaption>
-                </figure>
-                <figure className="flex flex-col items-center justify-between gap-2 rounded-2xl border border-line bg-panel/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                  {/* 300px d'étude réduits à 0,6 ≈ 180px ; le wrapper
-                     réserve la taille réduite, l'enfant reste au
-                     corner supérieur (l'étude pousse depuis le haut) */}
-                  <span className="relative block h-[168px] w-[180px]">
-                    <span className="absolute left-1/2 top-0 origin-top -translate-x-1/2 scale-[0.6]">
-                      <PullToRefresh />
-                    </span>
-                  </span>
-                  <figcaption className="text-center font-mono text-[10px] leading-relaxed text-dim">
-                    tirez la carte vers le bas —<br />elle cède, puis rebondit
-                  </figcaption>
-                </figure>
+            <footer className="border-t border-line/60 px-4 pb-24 pt-4 text-[10.5px] text-faint md:px-7 md:pb-8">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="max-w-3xl leading-relaxed">
+                  Black Hole — dashboard en lecture seule des mêmes artefacts
+                  que la documentation :{" "}
+                  <code className="text-accent">runs/benchmarks.jsonl</code>,{" "}
+                  <code className="text-accent">runs/bh-005/log.jsonl</code>,{" "}
+                  <code className="text-accent">docs/METRICS.md</code>. Aucun
+                  chiffre n&apos;est recalculé côté navigateur.
+                </p>
+                <nav className="flex shrink-0 items-center gap-3 font-mono text-[10px]">
+                  <Link
+                    href="/journal"
+                    className="text-accent/90 underline-offset-2 hover:text-accent hover:underline"
+                  >
+                    journal
+                  </Link>
+                  <Link
+                    href="/runbook"
+                    className="text-dim underline-offset-2 hover:text-ink hover:underline"
+                  >
+                    runbook
+                  </Link>
+                  <Link
+                    href="/donnees"
+                    className="text-dim underline-offset-2 hover:text-ink hover:underline"
+                  >
+                    données
+                  </Link>
+                </nav>
               </div>
             </footer>
           </div>

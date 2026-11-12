@@ -21,7 +21,18 @@
  */
 
 export const STALE_AFTER_S = 120;
-export const POLL_MS = 3000;
+/**
+ * Network cadence of the shared feed.
+ *
+ * The producer itself writes ~every 26 s (log) / 30 s (heartbeat), so polling
+ * faster does not invent new measurements — it only shortens the delay
+ * between the producer writing and the browser *seeing* it. One second keeps
+ * that delay under a second without turning the dashboard into a load test;
+ * the clocks and freshness bars are animated locally at ~60 fps on top.
+ * `/api/live` caches `nvidia-smi` and `ps` for 2 s, so a 1 s poll does not
+ * spawn two processes per second on the trainer's box.
+ */
+export const POLL_MS = 1000;
 export const HEARTBEAT_S = 30;
 
 export type SignalSource = "local" | "hub" | "snapshot" | "cache" | "none";
@@ -134,4 +145,52 @@ export function humanAge(s: number | null | undefined): string {
   if (m < 60) return `${m} min ${String(Math.round(s % 60)).padStart(2, "0")}`;
   const h = Math.floor(m / 60);
   return `${h} h ${String(m % 60).padStart(2, "0")}`;
+}
+
+/**
+ * The same age, but with the precision the UI actually has.
+ *
+ * `humanAge` deliberately rounds: a paragraph that says "12 s" is easier to
+ * read than "12,37 s". The header, however, is a live instrument — it should
+ * show the clock moving, not jump one second at a time. Under ten seconds we
+ * keep two decimals; under a minute one; past that, the honest unit wins.
+ */
+export function preciseAge(s: number | null | undefined): string {
+  if (s === null || s === undefined || !Number.isFinite(s)) return "—";
+  if (s < 1) return `${Math.max(0, Math.round(s * 1000))} ms`;
+  if (s < 10) return `${s.toFixed(2)} s`;
+  if (s < 90) return `${s.toFixed(1)} s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) {
+    const rest = s - m * 60;
+    return `${m} min ${rest < 10 ? rest.toFixed(1) : Math.round(rest)
+      .toString()
+      .padStart(2, "0")}`;
+  }
+  const h = Math.floor(m / 60);
+  return `${h} h ${String(m % 60).padStart(2, "0")}`;
+}
+
+/** Seconds between an ISO timestamp and a given `now` (ms), with sub-second precision. */
+export function ageAt(iso: string | null | undefined, now: number): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return null;
+  return Math.max(0, (now - t) / 1000);
+}
+
+/** `13:42:07.318` in UTC — the clock the artefacts are written in. */
+export function clockUTC(now: number): string {
+  const d = new Date(now);
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  const ss = String(d.getUTCSeconds()).padStart(2, "0");
+  const ms = String(d.getUTCMilliseconds()).padStart(3, "0");
+  return `${hh}:${mm}:${ss}.${ms}`;
+}
+
+/** `13:42:07` in UTC, for timestamps that did not move. */
+export function shortUTC(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return iso.includes("T") ? iso.slice(11, 19) : iso;
 }
