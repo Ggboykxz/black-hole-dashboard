@@ -28,7 +28,7 @@ export const HINT_KEY = "bh.swarm.hint.v1";
 export const MAX_ROWS = 1200;
 export const MAX_VALS = 400;
 export const MAX_HISTORY = 360;
-/** ~36 min of samples at the 3 s poll — enough to see a real drift. */
+/** ~12 min of samples at the 1 s poll — enough to see a real drift. */
 export const MAX_SAMPLES = 720;
 
 export interface LiveRow {

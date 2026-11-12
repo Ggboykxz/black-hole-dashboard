@@ -60,6 +60,14 @@ Le « direct » a deux modes, et l'interface dit lequel parle :
 | **local** (sur la machine qui entraîne) | ~26 s | `app/api/live/route.ts` lit `runs/<run>/log.jsonl` à chaque requête + `nvidia-smi` |
 | **Hub** (déployé sur Vercel) | ~30 s | heartbeat `live.json` publié par `scripts/live_sync.py` |
 
+Le réseau du dashboard interroge `/api/live` **toutes les 1 s**. Entre deux
+réponses, l'horloge UTC, l'âge du signal et les barres de fraîcheur sont
+recalculés localement à ~10 Hz (`requestAnimationFrame`) : l'interface bouge
+en millisecondes, mais elle n'invente aucune mesure — la cadence du réseau,
+la latence mesurée et l'âge du producteur restent affichés séparément.
+Côté serveur, `nvidia-smi` et `ps` sont mis en cache 2 s pour qu'un poll par
+seconde ne lance pas deux processus par seconde sur la boîte du trainer.
+
 ## Lancer en local
 
 ```bash
@@ -80,7 +88,7 @@ Sur Colab, le port est exposé par le proxy du notebook :
 
    | variable | valeur | pourquoi |
    |---|---|---|
-   | `HF_TOKEN` | jeton `read` | le dépôt de sauvegarde est **privé** : sans jeton, le dashboard retombe sur l'instantané embarqué (données plus fraîches) |
+   | `HF_TOKEN` | jeton `read` (optionnel) | le dépôt de sauvegarde est **public** depuis le 2026-11-12 ; le jeton ne sert plus qu'aux dépôts privés. Sans lui, le dashboard retombe sur l'instantané embarqué |
    | `HF_REPO` | `Ggboykxz/black-hole-100m-backup` | dépôt de la sauvegarde |
    | `HF_LIVE_REPO` | `Ggboykxz/black-hole-live` | dépôt du heartbeat |
    | `DASHBOARD_RUN` | `bh-005` | run affiché |

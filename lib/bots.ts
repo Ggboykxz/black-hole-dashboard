@@ -73,8 +73,8 @@ export function buildBots(snapshot: Snapshot, live: Live | null): Bot[] {
       ).toFixed(3)} · ${Math.round(
         l?.tokens_per_s ?? s.status.tokens_per_s ?? 0,
       ).toLocaleString("fr-FR")} tok/s.\n${(percent * 100).toFixed(1)} % du run, ${
-        l?.eta_h ?? s.status.eta_h
-      }?.toFixed?.(1) ?? "—"} h restantes.\nSource : runs/bh-005/log.jsonl.`,
+        (l?.eta_h ?? s.status.eta_h)?.toFixed(1) ?? "—"
+      } h restantes.\nSource : runs/bh-005/log.jsonl.`,
       source: "runs/bh-005/log.jsonl",
     },
     {

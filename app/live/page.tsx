@@ -40,10 +40,10 @@ export default async function LivePage() {
         <Swarm bots={buildBots(s, null)} height={300} />
       </Card>
 
-      {/* les six études Bencho ne vivent plus ici : le dock est la nav
-          mobile, le toggle la pause du direct, la pile de toasts est
-          flottante au niveau du site, et les trois sans fonction sont
-          dans l'atelier du pied de page (layout.tsx) */}
+      {/* les études Bencho ne vivent plus ici : le dock est la nav mobile,
+          le bouton pause commande le direct, la pile de toasts est
+          flottante au niveau du site. Le pied de page ne porte plus que la
+          provenance des artefacts — pas de décoration sans fonction. */}
 
       <LivePanel
         initial={s.series.train.map((p) => ({ x: p.step, y: p.loss }))}

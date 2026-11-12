@@ -6,7 +6,7 @@ import { buildHealth, type Health } from "@/lib/health";
 import { Meter } from "@/components/base/meter/meter";
 import { useLiveFeed } from "./live-provider";
 import { SignalAge } from "./live-clock";
-import { humanAge, preciseAge, shortUTC } from "@/lib/signal";
+import { preciseAge, shortUTC } from "@/lib/signal";
 
 const TONE: Record<string, { bg: string; text: string; border: string }> = {
   ok: { bg: "bg-good/10", text: "text-good", border: "border-good/40" },
@@ -97,7 +97,7 @@ export default function HealthPanel({
             <div className="text-[10.5px] text-dim">{health.detail}</div>
           </div>
         </div>
-        <span className="font-mono text-[9.5px] text-faint">
+        <span className="text-right font-mono text-[9.5px] leading-relaxed text-faint">
           {feed.source === "local"
             ? "log local"
             : feed.source === "hub"
@@ -107,8 +107,11 @@ export default function HealthPanel({
                 : feed.source === "snapshot"
                   ? "instantané figé"
                   : "aucune source"}{" "}
-          · {measured?.updated_at?.slice(11, 19) ?? "—"} UTC ·{" "}
+          · écrit {shortUTC(measured?.updated_at)} UTC
+          <br />
           <span style={{ color: feed.meta.color }}>{feed.meta.label}</span>
+          {" · "}
+          <SignalAge updatedAt={measured?.updated_at} className="text-ink" />
         </span>
       </div>
 
@@ -129,8 +132,39 @@ export default function HealthPanel({
         <span className="num shrink-0 text-[10px]" style={{ color: feed.meta.color }}>
           {feed.age === null
             ? "— (aucune mesure reçue)"
-            : `${Math.round(feed.fresh * 100)} % · ${humanAge(feed.age)}`}
+            : `${Math.round(feed.fresh * 100)} % · ${preciseAge(feed.age)}`}
         </span>
+      </div>
+
+      {/* the instrument's own telemetry: how often we ask, how long the
+          round-trip took, and how many answers we have received. It is
+          deliberately separate from the producer's age — a fast network
+          must not make a stale measurement look fresh. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line/60 px-4 py-1.5 font-mono text-[9px] text-faint">
+        <span>
+          lecture{" "}
+          <SignalAge updatedAt={measured?.updated_at} className="text-dim" />
+        </span>
+        <span>
+          poll <span className="text-dim">{feed.pollMs / 1000} s</span>
+        </span>
+        <span>
+          aller-retour{" "}
+          <span className="text-dim">
+            {feed.latencyMs === null ? "—" : `${feed.latencyMs} ms`}
+          </span>
+        </span>
+        <span>
+          réponses <span className="text-dim">{feed.pollCount}</span>
+        </span>
+        {feed.lastPollAt ? (
+          <span className="ml-auto">
+            dernière requête{" "}
+            <span className="text-dim">
+              {shortUTC(new Date(feed.lastPollAt).toISOString())} UTC
+            </span>
+          </span>
+        ) : null}
       </div>
 
       {/* ── le matériel, en BoardUI Meter ────────────────────────
@@ -144,7 +178,22 @@ export default function HealthPanel({
          `measured.gpu` → pas de rangée : un absence de donnée n'est
          jamais rendue comme une donnée. */}
       {measured?.gpu ? (
-        <div className="grid gap-x-6 gap-y-2 border-b border-line/60 px-4 py-3 sm:grid-cols-2">
+        <div className="border-b border-line/60">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 px-4 pt-2.5">
+            <span className="text-[9.5px] uppercase tracking-[0.12em] text-faint">
+              matériel
+            </span>
+            <span className="num text-[9px] text-faint">
+              {measured.gpu.name}
+              {measured.gpu.clock_mhz
+                ? ` · ${measured.gpu.clock_mhz} / ${measured.gpu.clock_max_mhz ?? "—"} MHz`
+                : ""}
+              {measured.gpu.power_w
+                ? ` · ${measured.gpu.power_w.toFixed(0)} W`
+                : ""}
+            </span>
+          </div>
+          <div className="grid gap-x-6 gap-y-2 px-4 pb-3 pt-1.5 sm:grid-cols-2">
           <Meter
             label="température GPU"
             minValue={30}
@@ -171,6 +220,7 @@ export default function HealthPanel({
             }
             size="sm"
           />
+          </div>
         </div>
       ) : null}
 

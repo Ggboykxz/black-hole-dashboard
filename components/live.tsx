@@ -287,7 +287,7 @@ export default function LivePanel({
                 step courant
               </div>
               <div className="num flex items-baseline gap-2 text-[34px] leading-none text-ink">
-                {fmtStep(nowStep)}
+                <span className="hero-step">{fmtStep(nowStep)}</span>
                 <span className="text-[13px] font-normal text-faint">
                   / {fmtStep(maxSteps)}
                 </span>

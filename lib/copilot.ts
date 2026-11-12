@@ -309,7 +309,7 @@ export function describeTarget(id: TargetId, snapshot: Snapshot): string {
         ? `${snapshot.audit.ok}/${snapshot.audit.total} contrôles documentaires passent : benchmarks, verdict P5, registre, extracteur GSM8K, fichiers cités, liens, pointeurs LFS.`
         : "L'audit documentaire n'a pas encore tourné.";
     case "live":
-      return `Le panneau direct interroge /api/live toutes les 3 s et journalise le feed dans localStorage. Il affiche l'âge réel du signal, jamais un faux « live ».`;
+      return `Le panneau direct interroge /api/live toutes les 1 s et journalise le feed dans localStorage. Il affiche l'âge réel du signal, jamais un faux « live ».`;
     case "chart-val":
       return st.val_last
         ? `L'évaluation du run : ${f4(st.val_last.loss)} au step ${fmtStep(st.val_last.step)}. C'est une tendance (20 batches), pas le chiffre publié.`

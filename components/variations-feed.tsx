@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useLiveFeed } from "./live-provider";
-import { freshness, humanAge, SIGNAL_META, STALE_AFTER_S } from "@/lib/signal";
+import { freshness, preciseAge, STALE_AFTER_S } from "@/lib/signal";
 import LiveVariations from "./variations";
 
 interface Props {
@@ -72,7 +72,7 @@ export default function VariationsFeed({ run, generatedAt, compact = false }: Pr
               {sourceLabel[source] ?? source}
             </span>
             <span className="chip" title="âge du heartbeat, calculé depuis son updated_at">
-              signal : {humanAge(age)}
+              signal : {preciseAge(age)}
             </span>
             {restored ? (
               <span className="chip !border-accent/30 !text-accent/90">
@@ -174,7 +174,7 @@ export default function VariationsFeed({ run, generatedAt, compact = false }: Pr
         ) : state === "stale" ? (
           <p className="mt-2 rounded-lg border border-warn/30 bg-warn/5 px-2.5 py-1.5 text-[10px] leading-relaxed text-warn/90">
             <strong className="font-medium">Le producteur s&apos;est tu.</strong>{" "}
-            Aucune nouvelle mesure depuis {humanAge(age)} : les chiffres
+            Aucune nouvelle mesure depuis {preciseAge(age)} : les chiffres
             affichés sont les <em>derniers reçus</em>, à leur valeur exacte.
             La courbe s&apos;arrête au lieu de se prolonger.
           </p>

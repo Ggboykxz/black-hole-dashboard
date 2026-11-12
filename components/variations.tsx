@@ -285,7 +285,7 @@ interface Props {
  *
  * It shows what changed *since the last measurement*, not since the last
  * render. The distinction matters: the trainer writes `log.jsonl` every 10
- * steps (~26 s), so a 3 s poll usually re-reads the same line. The tracker
+ * steps (~26 s), so a 1 s poll usually re-reads the same line. The tracker
  * therefore reports the last **distinct** value and how long it has held,
  * instead of drawing a flat line as if the model had stopped.
  */

@@ -59,7 +59,6 @@ import {
  * frozen source is never presented as a live one.
  */
 
-export const POLL_MS = 3000;
 /** how many change lines are kept in memory */
 const MAX_CHANGES = 400;
 
@@ -70,7 +69,7 @@ const MAX_CHANGES = 400;
  * the same one, read twice. The signature is therefore built from the
  * values themselves — at the producer's precision — and not from a
  * timestamp: in local mode the API stamps `updated_at` with the time of the
- * read, so a timestamp would create a new sample every 3 s and draw a flat
+ * read, so a timestamp would create a new sample every poll and draw a flat
  * line that pretends to track.
  */
 function signature(s: MetricSample): string {
@@ -279,7 +278,7 @@ export function LiveProvider({
         // ---- one sample per *new measurement* ----------------------------
         // The heartbeat only changes when the producer wrote something new
         // (the log every 10 steps, the GPU every beat). Re-appending an
-        // unchanged payload every 3 s would draw a flat line and pretend to
+        // unchanged payload on every poll would draw a flat line and pretend to
         // track: the sample is written only when the *values* really moved.
         const sample = sampleFrom(data);
         const sig = signature(sample);

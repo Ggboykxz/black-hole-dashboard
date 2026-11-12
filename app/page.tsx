@@ -52,7 +52,7 @@ export default async function Home() {
       {/* ---------------------------------------------------------- swarm */}
       <Card
         title="Les avatars en direct"
-        source="états calculés depuis les artefacts, rafraîchis toutes les 3 s"
+        source="états calculés depuis les artefacts, rafraîchis avec le feed partagé (1 s)"
         botTarget="swarm"
       >
         <Swarm bots={buildBots(s, null)} height={320} />

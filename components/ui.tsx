@@ -80,16 +80,16 @@ export function Stat({
             ? "#38bdf8"
             : null;
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-line bg-white/[0.022] px-3.5 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2a3343] hover:bg-white/[0.04]">
+    <div className="group relative overflow-hidden rounded-2xl border border-line/90 bg-gradient-to-br from-white/[0.035] to-white/[0.012] px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2a3343] hover:from-white/[0.05] hover:to-white/[0.02]">
       {dot ? (
         <span
-          className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-40 transition-opacity duration-300 group-hover:opacity-100"
           style={{
-            background: `linear-gradient(90deg, transparent, ${dot}88, transparent)`,
+            background: `linear-gradient(90deg, transparent, ${dot}, transparent)`,
           }}
         />
       ) : null}
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.08em] text-faint">
+      <div className="flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.1em] text-faint">
         {dot ? (
           <span
             className="h-1 w-1 shrink-0 rounded-full"
@@ -98,8 +98,10 @@ export function Stat({
         ) : null}
         {label}
       </div>
-      <div className={`num mt-1 text-[19px] leading-tight ${color}`}>{value}</div>
-      {sub ? <div className="mt-0.5 text-[11px] text-dim">{sub}</div> : null}
+      <div className={`num mt-1.5 text-[20px] leading-none tracking-tight ${color}`}>
+        {value}
+      </div>
+      {sub ? <div className="mt-1 text-[10.5px] leading-snug text-dim">{sub}</div> : null}
       {spark ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 opacity-70 transition-opacity group-hover:opacity-100">
           {spark}
@@ -126,7 +128,7 @@ export function Badge({
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-[2px] text-[10.5px] leading-none ${map[tone]}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-[3px] text-[10px] leading-none backdrop-blur-sm ${map[tone]}`}
     >
       {children}
     </span>
