@@ -100,6 +100,19 @@ OPENCODE_DIRECTORY=/content # optionnel : le répertoire de travail des nouvelle
 OPENCODE_PASSWORD=…       # optionnel : sinon ~/.config/opencode/service.json
 ```
 
+Pour démarrer le poste avec une clé neuve, sans l'écrire dans un fichier :
+
+```bash
+cd dashboard
+KEY=$(openssl rand -hex 16)
+echo "clé du poste (à coller dans le navigateur) : $KEY"
+OPENCODE_KEY="$KEY" npm run dev
+```
+
+Le service doit tourner : `opencode service status` doit answered une URL.
+S'il ne répond pas, `opencode service start` (ou laisser le TUI démarrer le
+service) suffit.
+
 Sur un déploiement public (Vercel), le poste n'existe pas : il n'y a pas de
 service OpenCode derrière, et `OPENCODE_KEY` n'y est pas défini.
 
