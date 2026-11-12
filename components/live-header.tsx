@@ -239,8 +239,13 @@ export default function LiveHeader({
             compact={false}
           />
         </span>
-        <span className="num text-[9px] text-faint sm:hidden">
-          <SignalAge updatedAt={live?.updated_at} />
+        <span className="block sm:hidden">
+          <LiveClock
+            updatedAt={live?.updated_at}
+            latencyMs={feed.latencyMs}
+            pollMs={feed.pollMs}
+            compact
+          />
         </span>
 
         <Link
